@@ -25,7 +25,8 @@ jobs:
       run: python fetch_temperatures.py --output temperatures.csv
 
     - name: Upload CSV artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: vejtemperaturer
         path: temperatures.csv
+
