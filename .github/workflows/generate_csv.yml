@@ -3,14 +3,14 @@ name: Generate CSV
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 * * * *"
+    - cron: "0 * * * *"  # kører hver time (kan ændres)
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Check out code
+    - name: Check out repository
       uses: actions/checkout@v3
 
     - name: Set up Python
@@ -18,19 +18,21 @@ jobs:
       with:
         python-version: '3.10'
 
-    - name: Install system dependencies
-      run: sudo apt-get update && sudo apt-get install -y libproj-dev proj-data proj-bin
-    
-    - name: Install Python dependencies
+    - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
+        python -m pip install --upgrade pip wheel setuptools
+        pip install pyproj==3.6.0
         pip install --no-cache-dir -r requirements.txt
 
     - name: Generate CSV
-      run: python fetch_temperatures.py --output temperatures.csv
+      run: python fetch_temperatures.py
 
-    - name: Upload CSV artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: vejtemperaturer
-        path: temperatures.csv
+    - name: Commit and push CSV
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        git add temperatures.csv
+        git commit -m "Opdateret temperatures.csv [skip ci]" || echo "No changes to commit"
+        git push
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
