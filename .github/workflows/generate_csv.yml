@@ -3,7 +3,7 @@ name: Generate CSV
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 * * * *"  # kører hver time (kan ændres)
+    - cron: "*/10 * * * *"  # kører hver time (kan ændres)
 
 jobs:
   build:
