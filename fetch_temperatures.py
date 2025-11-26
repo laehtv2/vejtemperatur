@@ -1,31 +1,25 @@
 #!/usr/bin/env python3
 """
-Henter vejtemperaturer fra Trafikkort (Vejdirektoratet) GeoJSON og gemmer som CSV.
-
-Brugsvejledning:
-    python fetch_temperatures.py --output temperatures.csv
-
-Scriptet bruger `requests` til at hente GeoJSON og `pandas` til at skrive CSV.
+Henter vejtemperaturer fra Trafikkort (Vejdirektoratet) GeoJSON, konverterer koordinater til WGS84, og gemmer som CSV.
 """
-
 from __future__ import annotations
 import argparse
 import json
 from typing import Any
 import requests
 import pandas as pd
-from datetime import datetime
+from pyproj import Transformer
 
 URL = (
     "https://storage.googleapis.com/trafikkort-data/geojson/25832/temperatures.point.json"
 )
 
+transformer = Transformer.from_crs("EPSG:25832", "EPSG:4326", always_xy=True)
 
 def fetch_geojson(url: str) -> dict[str, Any]:
     resp = requests.get(url, timeout=20)
     resp.raise_for_status()
     return resp.json()
-
 
 def parse_features(geojson: dict[str, Any]) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
@@ -39,45 +33,15 @@ def parse_features(geojson: dict[str, Any]) -> list[dict[str, Any]]:
         lon, lat = (None, None)
         if isinstance(coords, (list, tuple)) and len(coords) >= 2:
             lon, lat = coords[0], coords[1]
-
-        # Forsøg at finde et tydeligt id / temperatur / tid
-        station_id = props.get("id") or props.get("stationId") or props.get("station_id")
-        # temperaturfelter kan hedde temperature, temp, value etc.
-        temperature = (
-            props.get("temperature")
-            if props.get("temperature") is not None
-            else props.get("temp")
-            if props.get("temp") is not None
-            else props.get("value")
-        )
-
-        # Tid/updated
-        timestamp = (
-            props.get("updated")
-            or props.get("timestamp")
-            or props.get("time")
-            or props.get("last_update")
-            or props.get("lastUpdated")
-        )
-
-        # Normaliser timestamp hvis muligt
-        if isinstance(timestamp, (int, float)):
-            # epoch seconds?
-            try:
-                timestamp = datetime.utcfromtimestamp(int(timestamp)).isoformat() + "Z"
-            except Exception:
-                timestamp = str(timestamp)
-        elif isinstance(timestamp, str):
-            # Lad det være som-streng (antag ISO-format)
-            timestamp = timestamp
+            lon, lat = transformer.transform(lon, lat)  # Konverter til WGS84
 
         row = {
-            "station_id": station_id,
-            "temperature": temperature,
-            "lon": lon,
-            "lat": lat,
-            "timestamp": timestamp,
-            # Gem hele properties som JSON hvis du vil bruge senere
+            "station_id": props.get("featureId"),
+            "road_temperature": props.get("roadSurfaceTemperature"),
+            "air_temperature": props.get("airTemperature"),
+            "lon_wgs84": lon,
+            "lat_wgs84": lat,
+            "timestamp": props.get("updated") or props.get("timestamp"),
             "properties_json": json.dumps(props, ensure_ascii=False),
         }
         rows.append(row)
@@ -99,17 +63,8 @@ def main() -> None:
         return
 
     df = pd.DataFrame(rows)
-    # Sortér gerne for nemheds skyld
-    if "timestamp" in df.columns:
-        try:
-            df["_ts_sort"] = pd.to_datetime(df["timestamp"], utc=True, errors="coerce")
-            df = df.sort_values("_ts_sort", ascending=False).drop(columns=["_ts_sort"])
-        except Exception:
-            pass
-
     df.to_csv(args.output, index=False)
     print(f"Gemte {len(df)} rækker til {args.output}")
-
 
 if __name__ == "__main__":
     main()
