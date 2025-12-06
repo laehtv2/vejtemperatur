@@ -3,7 +3,7 @@ name: Generate CSV
 on:
   workflow_dispatch:
   schedule:
-    - cron: "*/10 * * * *"  # kører hver time (kan ændres)
+    - cron: "*/10 * * * *"  # kører hver 10. minut
 
 jobs:
   build:
@@ -27,12 +27,12 @@ jobs:
     - name: Generate CSV
       run: python fetch_temperatures.py
 
-    - name: Commit and push CSV
+    - name: Commit and push CSV files
       run: |
         git config --global user.name "github-actions[bot]"
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
-        git add temperatures.csv
-        git commit -m "Opdateret temperatures.csv [skip ci]" || echo "No changes to commit"
+        git add vej_temp_1.csv vej_temp_2.csv
+        git commit -m "Opdaterede CSV-filer [skip ci]" || echo "No changes to commit"
         git push
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
