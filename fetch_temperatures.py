@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """
 Henter vejtemperaturer fra Trafikkort (Vejdirektoratet), konverterer koordinater til WGS84,
-og gemmer CSV direkte i repo.
+og gemmer CSV med kolonnerne:
+ID, NAME, Latitude, Longitude, Vej_temp, Luft_temp
 """
+
 from __future__ import annotations
-import json
 import requests
 import pandas as pd
 from pyproj import Transformer
@@ -21,21 +22,28 @@ def fetch_geojson(url: str) -> dict:
 
 def parse_features(geojson: dict) -> list[dict]:
     rows = []
+    id_counter = 1
+
     for feat in geojson.get("features", []):
         geom = feat.get("geometry") or {}
         props = feat.get("properties") or {}
         coords = geom.get("coordinates") if geom else None
+
         lon, lat = (None, None)
         if coords and len(coords) >= 2:
-            lon, lat = coords[0], coords[1]
-            lon, lat = transformer.transform(lon, lat)  # Konverter til WGS84
+            lon, lat = transformer.transform(coords[0], coords[1])  # til WGS84
 
         rows.append({
-            "lat": lat,
-            "lon": lon,
-            "road_temperature": props.get("roadSurfaceTemperature"),
-            "air_temperature": props.get("airTemperature"),
+            "ID": id_counter,
+            "NAME": id_counter,
+            "Latitude": lat,
+            "Longitude": lon,
+            "Vej_temp": props.get("roadSurfaceTemperature"),
+            "Luft_temp": props.get("airTemperature"),
         })
+
+        id_counter += 1
+
     return rows
 
 def main():
