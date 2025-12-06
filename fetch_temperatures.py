@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
 Henter vejtemperaturer fra Trafikkort (Vejdirektoratet), konverterer koordinater til WGS84,
-og gemmer CSV med kolonnerne:
-ID, NAME, Latitude, Longitude, Vej_temp, Luft_temp
+og gemmer data i to CSV-filer:
+vej_temp_1.csv og vej_temp_2.csv
 """
 
 from __future__ import annotations
@@ -49,9 +49,18 @@ def parse_features(geojson: dict) -> list[dict]:
 def main():
     geojson = fetch_geojson(URL)
     rows = parse_features(geojson)
+
     df = pd.DataFrame(rows)
-    df.to_csv("vej_temperatures.csv", index=False)
-    print(f"Gemte {len(df)} rækker til temperatures.csv")
+
+    # Split i to filer á maks 500
+    df_1 = df.iloc[:500]
+    df_2 = df.iloc[500:]
+
+    df_1.to_csv("vej_temp_1.csv", index=False)
+    df_2.to_csv("vej_temp_2.csv", index=False)
+
+    print(f"Gemte {len(df_1)} rækker i vej_temp_1.csv")
+    print(f"Gemte {len(df_2)} rækker i vej_temp_2.csv")
 
 if __name__ == "__main__":
     main()
