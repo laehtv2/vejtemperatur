@@ -50,7 +50,7 @@ def main():
     geojson = fetch_geojson(URL)
     rows = parse_features(geojson)
     df = pd.DataFrame(rows)
-    df.to_csv("temperatures.csv", index=False)
+    df.to_csv("vej_temperatures.csv", index=False)
     print(f"Gemte {len(df)} rækker til temperatures.csv")
 
 if __name__ == "__main__":
