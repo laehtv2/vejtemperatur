@@ -4,7 +4,7 @@ Henter vejtemperaturer fra Trafikkort (Vejdirektoratet), konverterer koordinater
 og gemmer data i tre CSV-filer:
 - vej_temp_1.csv (første 500)
 - vej_temp_2.csv (resten)
-- vejtemp_udvalgte.csv (45 repræsentative punkter fordelt over DK)
+- vejtemp_udvalgte.csv (45 repræsentative punkter fordelt over DK, faste hver gang)
 """
 
 from __future__ import annotations
@@ -50,16 +50,16 @@ def parse_features(geojson: dict) -> list[dict]:
 
     return rows
 
-def pick_representative_points(df: pd.DataFrame, k: int = 45) -> pd.DataFrame:
+def pick_representative_points(df: pd.DataFrame, k: int = 45, seed: int = 42) -> pd.DataFrame:
     """
     Udvælg k punkter fordelt over Danmark vha. k-means clustering.
     Vi finder cluster-centroid, og vælger det punkt der ligger tættest på centret.
+    Brug en fast random_state for at få samme 45 punkter hver gang.
     """
-
     coords = df[["Latitude", "Longitude"]].to_numpy()
 
-    # KMeans clustering
-    kmeans = KMeans(n_clusters=k, random_state=42, n_init="auto")
+    # KMeans clustering med fast seed
+    kmeans = KMeans(n_clusters=k, random_state=seed, n_init="auto")
     labels = kmeans.fit_predict(coords)
     centers = kmeans.cluster_centers_
 
@@ -78,6 +78,7 @@ def pick_representative_points(df: pd.DataFrame, k: int = 45) -> pd.DataFrame:
         nearest_idx = cluster_indices[np.argmin(dists)]
         selected_indices.append(nearest_idx)
 
+    # sorter efter ID så rækkefølgen bliver stabil
     return df.loc[selected_indices].sort_values("ID")
 
 def main():
@@ -95,11 +96,11 @@ def main():
     print(f"Gemte {len(df_1)} rækker i vej_temp_1.csv")
     print(f"Gemte {len(df_2)} rækker i vej_temp_2.csv")
 
-    # Udvælg 45 repræsentative punkter
-    df_selected = pick_representative_points(df, k=45)
+    # Udvælg 45 repræsentative punkter (samme hver gang)
+    df_selected = pick_representative_points(df, k=45, seed=42)
     df_selected.to_csv("vejtemp_udvalgte.csv", index=False)
 
-    print(f"Gemte {len(df_selected)} repræsentative punkter i vejtemp_udvalgte.csv")
+    print(f"Gemte {len(df_selected)} rækker i vejtemp_udvalgte.csv (faste repræsentative punkter)")
 
 if __name__ == "__main__":
     main()
