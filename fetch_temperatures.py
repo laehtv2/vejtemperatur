@@ -50,14 +50,7 @@ def parse_features(geojson: dict) -> list[dict]:
         id_counter += 1
     return rows
 
-# Intervallet for ID'er i dataen er ca. 1 til 643
-MIN_ID = 1
-MAX_ID = 643
-N_SELECTED = 100 # Antal udvalgte stationer
-
-# Genererer 100 ligeligt fordelte ID'er i intervallet [MIN_ID, MAX_ID].
-# np.linspace skaber jævnt fordelte flydende tal, som vi afrunder til heltal.
-FIXED_IDS = np.round(np.linspace(MIN_ID, MAX_ID, N_SELECTED)).astype(int)
+FIXED_IDS = [1, 3, 7, 11, 36, 38, 56, 93, 95, 103, 127, 137, 141, 144, 153, 154, 156, 163, 171, 181, 196, 198, 201, 204, 209, 213, 231, 235, 243, 244, 247, 252, 255, 258, 259, 262, 267, 270, 283, 288, 306, 314, 323, 328, 336, 340, 341, 345, 366, 371, 373, 379, 390, 396, 399, 404, 410, 417, 424, 425, 427, 431, 436, 440, 446, 451, 457, 467, 468, 474, 478, 484, 499, 500, 505, 507, 510, 514, 516, 519, 522, 523, 527, 535, 540, 560, 563, 565, 573, 574, 586, 593, 597, 603, 606, 612, 620, 630, 637, 643]
 
 def pick_representative_points(df: pd.DataFrame) -> pd.DataFrame:
     """
