@@ -15,6 +15,7 @@ import datetime
 import geopandas as gpd
 from shapely.geometry import Point
 from typing import Optional, Any
+from pandas.errors import EmptyDataError 
 
 # ---------------------------
 # KONFIGURATION
@@ -26,11 +27,14 @@ DMI_DATETIME_WINDOW = "now-PT60M/now"
 # EPSG:25832 -> WGS84
 transformer = Transformer.from_crs("EPSG:25832", "EPSG:4326", always_xy=True)
 
-# VIGTIGT: Denne liste SKAL indeholde de STABILE StationID'er (device_id) 
-# fra API'en, IKKE de dynamiske ID'er (1, 2, 3, ...).
-# Du skal køre koden ÉN gang for at finde de korrekte StationID'er (se Trin 2).
+# VIGTIGT: Denne liste SKAL opdateres med de STABILE StationID'er (device_id)
+# som matcher de 30 bedst fordelte koordinater.
+# BEMÆRK: Disse ID'er er eksempler og skal erstattes efter Trin 3.
 SELECTED_STATION_IDS: list[str] = [
-    # Indsæt de 30 stabile StationID'er her efter du har fundet dem.
+    '5056', '7126', '6024', '1400', '6588', '7025', '6042', '6048', '6055', 
+    '6445', '7140', '5998', '7162', '7192', '7170', '7188', '7154', '7116', 
+    '5057', '6147', '7060', '7061', '6049', '5935', '5944', '5926', '5917', 
+    '5937', '5951', '5977'
 ] 
 
 # ---------------------------
@@ -50,8 +54,11 @@ def fetch_all_dmi_dewpoints(parameter_id: str) -> pd.DataFrame:
         r = requests.get(DMI_BASE, params=params, timeout=15)
         r.raise_for_status()
         data = r.json()
-    except Exception as e:
+    except requests.exceptions.HTTPError as e:
         print(f"Fejl ved hentning af ALLE DMI data: {e}")
+        return gpd.GeoDataFrame()
+    except Exception as e:
+        print(f"Generel fejl ved hentning af ALLE DMI data: {e}")
         return gpd.GeoDataFrame()
 
     dmi_rows = []
@@ -60,7 +67,6 @@ def fetch_all_dmi_dewpoints(parameter_id: str) -> pd.DataFrame:
         geom = feat.get("geometry", {})
         props = feat.get("properties", {})
         
-        # Geometri er typisk i WGS84
         lon, lat = geom.get("coordinates") if geom and geom.get("coordinates") else (None, None)
         val = props.get("value")
         
@@ -72,17 +78,14 @@ def fetch_all_dmi_dewpoints(parameter_id: str) -> pd.DataFrame:
                 "geometry": Point(lon, lat)
             })
 
-    # Opret GeoDataFrame fra DMI data
     dmi_gdf = gpd.GeoDataFrame(dmi_rows, crs="EPSG:4326")
-    
-    # Fjern duplikater for at sikre én observation pr. station (baseret på unikke koordinater)
     dmi_gdf = dmi_gdf.drop_duplicates(subset=["Latitude", "Longitude"], keep='first')
     
     print(f"Hentet {len(dmi_gdf)} unikke DMI dugpunkt observationer.")
     return dmi_gdf
 
 # ---------------------------
-# VEJTEMP HENTNING & PARSING (Rettet til at gemme StationID)
+# VEJTEMP HENTNING & PARSING (Rettet: Bevarer ID og NAME for header-kompatibilitet)
 # ---------------------------
 
 def fetch_geojson(url: str) -> dict:
@@ -102,11 +105,13 @@ def parse_features(geojson: dict) -> list[dict]:
         if coords and len(coords) >= 2:
             lon, lat = transformer.transform(coords[0], coords[1])
 
-        station_id = props.get("device_id") # Dette er den STABILE ID!
+        # VIGTIGT: device_id er den STABILE ID!
+        station_id = props.get("device_id") 
 
         rows.append({
-            "ID": id_counter,
-            "StationID": station_id if station_id else f"Vejtemp_{id_counter}", # Brug StationID til udvælgelse
+            "ID": id_counter, # Bevarer den ustabile ID for output-kompatibilitet
+            "NAME": str(id_counter), # Laver et dummy NAME, der matcher det ustabile ID for output-kompatibilitet
+            "StationID": str(station_id) if station_id is not None else f"Vejtemp_{id_counter}", # Den STABILE ID, der bruges til udvælgelse
             "Latitude": lat,
             "Longitude": lon,
             "Vej_temp": props.get("roadSurfaceTemperature"),
@@ -116,18 +121,22 @@ def parse_features(geojson: dict) -> list[dict]:
     return rows
 
 def pick_representative_points(df: pd.DataFrame) -> pd.DataFrame:
-    """ Bruger den faste liste SELECTED_STATION_IDS til at vælge repræsentative stationer. """
+    """ Bruger den faste liste SELECTED_STATION_IDS til at vælge repræsentative stationer (baseret på StationID). """
     if not SELECTED_STATION_IDS:
-        print("\nADVARSEL: SELECTED_STATION_IDS er tom. Returnerer alle stationer. Find de stabile ID'er først.")
-        return pd.DataFrame() # Retur tom DF, hvis ID'er mangler
+        print("\nADVARSEL: SELECTED_STATION_IDS er tom. Fortsæt til Trin 3 for at finde de stabile ID'er.")
+        return pd.DataFrame() 
         
-    # Vælger nu baseret på StationID, som er den STABILE ID.
-    df_selected = df[df["StationID"].astype(str).isin(map(str, SELECTED_STATION_IDS))].sort_values("StationID")
+    df_selected = df[df["StationID"].isin(map(str, SELECTED_STATION_IDS))].sort_values("StationID")
     return df_selected
 
 
 def main():
-    geojson = fetch_geojson(URL_VEJTEMP)
+    try:
+        geojson = fetch_geojson(URL_VEJTEMP)
+    except Exception as e:
+        print(f"Fejl ved hentning af Vejtemp API: {e}. Kan ikke fortsætte.")
+        return
+
     df = pd.DataFrame(parse_features(geojson))
 
     # --- Hent DMI data for alle stationer ---
@@ -159,24 +168,21 @@ def main():
     if "Precip" in df.columns:
         df = df.drop(columns=["Precip"])
         
-    # VIGTIGT: Gem StationID i CSV'erne
-    df_save = df.drop(columns=["ID", "NAME"]) # Drop de ustabile kolonner
-    df_1 = df_save.iloc[:500]
-    df_2 = df_save.iloc[500:]
+    # Nu bevares ID og NAME, som ønsket.
+    df_1 = df.iloc[:500].copy()
+    df_2 = df.iloc[500:].copy()
 
     df_1.to_csv("vej_temp_1.csv", index=False)
     df_2.to_csv("vej_temp_2.csv", index=False)
 
-    print(f"Gemte {len(df_1)} rækker i vej_temp_1.csv (inkl. geografisk matchet dugpunkt og STABIL StationID)")
-    print(f"Gemte {len(df_2)} rækker i vej_temp_2.csv (inkl. geografisk matchet dugpunkt og STABIL StationID)")
+    print(f"Gemte {len(df_1)} rækker i vej_temp_1.csv (bevarer ID, NAME, Latitude, Longitude)")
+    print(f"Gemte {len(df_2)} rækker i vej_temp_2.csv (bevarer ID, NAME, Latitude, Longitude)")
 
     df_selected = pick_representative_points(df)
     if not df_selected.empty:
-        df_selected_final = df_selected.drop(columns=["ID", "NAME"]) # Drop de ustabile kolonner
-        df_selected_final.to_csv("vejtemp_udvalgte.csv", index=False)
-        print(f"Gemte {len(df_selected_final)} rækker i vejtemp_udvalgte.csv (stabil udvælgelse)")
+        df_selected.to_csv("vejtemp_udvalgte.csv", index=False)
+        print(f"Gemte {len(df_selected)} rækker i vejtemp_udvalgte.csv (stabil udvælgelse via StationID)")
 
 
 if __name__ == "__main__":
-    # For at dette script kan køre, skal du sikre, at GeoPandas, Shapely og Requests er installeret.
     main()
