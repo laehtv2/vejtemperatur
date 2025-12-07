@@ -1,9 +1,9 @@
 name: Generate KML
 
 on:
-  workflow_dispatch:      # manuel kørsel
+  workflow_dispatch:      # Manuel kørsel
   schedule:
-    - cron: "0 * * * *"  # kør hver time (juster som ønsket)
+    - cron: "0 * * * *"  # Kør hver time, juster efter behov
 
 jobs:
   build:
@@ -21,17 +21,17 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install pandas simplekml
+        pip install pandas simplekml scipy
 
-    - name: Run generate_interpolated_kml.py
+    - name: Run KML generation
       run: python generate_interpolated_kml.py
 
-    - name: Commit KML files
+    - name: Commit and push KML files
       run: |
         git config --global user.name "github-actions[bot]"
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
         git add vejtemp_only.kml vejtemp_dugpunkt.kml
-        git commit -m "Opdateret KML filer [skip ci]" || echo "No changes to commit"
+        git commit -m "Opdateret interpolerede KML-filer [skip ci]" || echo "No changes to commit"
         git push
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
