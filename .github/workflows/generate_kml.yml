@@ -1,0 +1,37 @@
+name: Generate KML
+
+on:
+  workflow_dispatch:      # manuel kørsel
+  schedule:
+    - cron: "0 * * * *"  # kør hver time (juster som ønsket)
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out repository
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pandas simplekml
+
+    - name: Run generate_two_kml.py
+      run: python generate_two_kml.py
+
+    - name: Commit KML files
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        git add vejtemp_only.kml vejtemp_dugpunkt.kml
+        git commit -m "Opdateret KML filer [skip ci]" || echo "No changes to commit"
+        git push
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
