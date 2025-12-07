@@ -19,12 +19,15 @@ jobs:
           python-version: "3.10"
 
       - name: Install dependencies
+        # BEDRE: Brug requirements.txt, som er i dit repo
         run: |
-          pip install numpy pandas matplotlib shapely geopandas pyproj lxml simplekml scikit-learn requests
+          pip install -r requirements.txt 
+        # Alternativt: pip install numpy pandas matplotlib shapely geopandas pyproj lxml simplekml scikit-learn requests scipy
 
       - name: Run vejtemp script
         run: |
-          python fetch_vejtemp.py
+          # **Korrekt filnavn: fetch_temperatures.py**
+          python fetch_temperatures.py
           python generate_interpolated_kml.py
 
       - name: Upload KML artifacts
