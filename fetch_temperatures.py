@@ -1,26 +1,85 @@
 #!/usr/bin/env python3
 """
-Henter vejtemperaturer fra Trafikkort, konverterer til WGS84,
-og gemmer data i tre CSV-filer:
-- vej_temp_1.csv (første 500)
-- vej_temp_2.csv (resten)
-- vejtemp_udvalgte.csv (45 faste repræsentative punkter)
+Henter vejtemperaturer fra Trafikkort og matcher med DMI dugpunkt via NÆRMESTE PUNKT.
+- Kræver at DMI har koordinater i deres output (hvilket MetObs endpoint gør).
 """
 
 from __future__ import annotations
 import requests
 import pandas as pd
 from pyproj import Transformer
-from sklearn.cluster import KMeans
 import numpy as np
 import json
-import os
+import time
+import datetime
+import geopandas as gpd
+from shapely.geometry import Point
+from typing import Optional, Any
 
-URL = "https://storage.googleapis.com/trafikkort-data/geojson/25832/temperatures.point.json"
-SELECTED_IDS_FILE = "selected_ids.json"
+# ---------------------------
+# KONFIGURATION
+# ---------------------------
+URL_VEJTEMP = "https://storage.googleapis.com/trafikkort-data/geojson/25832/temperatures.point.json"
+DMI_BASE = "https://opendataapi.dmi.dk/v2/metObs/collections/observation/items"
+DMI_DATETIME_WINDOW = "now-PT60M/now" 
 
 # EPSG:25832 -> WGS84
 transformer = Transformer.from_crs("EPSG:25832", "EPSG:4326", always_xy=True)
+
+SELECTED_IDS = [213, 485, 143, 540, 237, 46, 415, 521, 157, 504, 191, 245, 509, 238, 577, 18, 590, 262, 565, 351, 480, 182, 468, 429, 515, 235, 631, 194, 502, 418]
+
+# ---------------------------
+# DMI HENTNING (OPPDATERET TIL ALLE STATIONER)
+# ---------------------------
+
+def fetch_all_dmi_dewpoints(parameter_id: str) -> pd.DataFrame:
+    """
+    Henter dugpunkt for ALLE tilgængelige DMI MetObs stationer og returnerer en GeoDataFrame.
+    """
+    params = {
+        "parameterId": parameter_id,
+        "datetime": DMI_DATETIME_WINDOW,
+        "limit": 5000 # Henter et stort antal, da vi skal have alle stationer
+    }
+    
+    try:
+        r = requests.get(DMI_BASE, params=params, timeout=15)
+        r.raise_for_status()
+        data = r.json()
+    except Exception as e:
+        print(f"Fejl ved hentning af ALLE DMI data: {e}")
+        return gpd.GeoDataFrame()
+
+    dmi_rows = []
+    
+    for feat in data.get("features", []):
+        geom = feat.get("geometry", {})
+        props = feat.get("properties", {})
+        
+        # Geometri er typisk i WGS84
+        lon, lat = geom.get("coordinates") if geom and geom.get("coordinates") else (None, None)
+        val = props.get("value")
+        
+        if lat is not None and lon is not None and val is not None:
+            dmi_rows.append({
+                "Dewpoint": float(val),
+                "Latitude": lat,
+                "Longitude": lon,
+                "geometry": Point(lon, lat)
+            })
+
+    # Opret GeoDataFrame fra DMI data
+    dmi_gdf = gpd.GeoDataFrame(dmi_rows, crs="EPSG:4326")
+    
+    # Fjern duplikater for at sikre én observation pr. station (baseret på unikke koordinater)
+    dmi_gdf = dmi_gdf.drop_duplicates(subset=["Latitude", "Longitude"], keep='first')
+    
+    print(f"Hentet {len(dmi_gdf)} unikke DMI dugpunkt observationer.")
+    return dmi_gdf
+
+# ---------------------------
+# VEJTEMP HENTNING & PARSING (uændret)
+# ---------------------------
 
 def fetch_geojson(url: str) -> dict:
     resp = requests.get(url, timeout=20)
@@ -39,9 +98,12 @@ def parse_features(geojson: dict) -> list[dict]:
         if coords and len(coords) >= 2:
             lon, lat = transformer.transform(coords[0], coords[1])
 
+        # StationID er ikke længere nødvendig til matching
+        station_id = props.get("device_id") 
+
         rows.append({
             "ID": id_counter,
-            "NAME": id_counter,
+            "StationID": station_id if station_id else f"Vejtemp_{id_counter}",
             "Latitude": lat,
             "Longitude": lon,
             "Vej_temp": props.get("roadSurfaceTemperature"),
@@ -50,37 +112,63 @@ def parse_features(geojson: dict) -> list[dict]:
         id_counter += 1
     return rows
 
-FIXED_IDS = [213, 485, 143, 540, 237, 46, 415, 521, 157, 504, 191, 245, 509, 238, 577, 18, 590, 262, 565, 351, 480, 182, 468, 429, 515, 235, 631, 194, 502, 418]
-
 def pick_representative_points(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Brug de 45 faste stationer (FIXED_IDS) til vejtemp_udvalgte.csv.
-    """
-    df_sorted = df.sort_values("ID").reset_index(drop=True)
-    df_selected = df_sorted[df_sorted["ID"].isin(FIXED_IDS)].sort_values("ID")
+    """ Bruger den faste liste SELECTED_IDS til at vælge repræsentative stationer. """
+    df_selected = df[df["ID"].isin(SELECTED_IDS)].sort_values("ID")
     return df_selected
 
 
 def main():
-    geojson = fetch_geojson(URL)
-    rows = parse_features(geojson)
-    df = pd.DataFrame(rows)
+    geojson = fetch_geojson(URL_VEJTEMP)
+    df = pd.DataFrame(parse_features(geojson))
 
-    # Split i to filer á maks 500
+    # --- Hent DMI data for alle stationer ---
+    dmi_gdf = fetch_all_dmi_dewpoints("temp_dew")
+    
+    if dmi_gdf.empty:
+        print("ADVARSEL: Kunne ikke hente DMI dugpunkt data. Fortsætter med Luft_temp som fallback.")
+        df["Dewpoint"] = df["Luft_temp"]
+    else:
+        # --- Matche dugpunkt til vejstationer (Nærmeste Nabo) ---
+        
+        # 1. Konverter vejtemp DF til GeoDataFrame
+        vejtemp_gdf = gpd.GeoDataFrame(
+            df.copy(), 
+            geometry=gpd.points_from_xy(df.Longitude, df.Latitude), 
+            crs="EPSG:4326"
+        )
+        
+        # 2. Match Nærmeste Nabo (DMI -> Vejtemp)
+        # Dette udfører en spatial join for at finde den nærmeste DMI-station til hver vejstation.
+        # Vi matcher i WGS84 for at holde det simpelt, men en projiceret CRS ville være mere præcis.
+        
+        # Find index for nærmeste DMI station til hver vejtemp station
+        nearest_dmi_idx = vejtemp_gdf.geometry.apply(lambda point: dmi_gdf.geometry.distance(point).idxmin())
+        
+        # Kopier dugpunktsværdien over
+        df["Dewpoint"] = dmi_gdf.loc[nearest_dmi_idx, "Dewpoint"].values
+
+
+    # --- Gem opdaterede CSV-filer ---
+    
+    # Fjern 'Precip' kolonnen, hvis den eksisterer
+    if "Precip" in df.columns:
+        df = df.drop(columns=["Precip"])
+    
     df_1 = df.iloc[:500]
     df_2 = df.iloc[500:]
 
     df_1.to_csv("vej_temp_1.csv", index=False)
     df_2.to_csv("vej_temp_2.csv", index=False)
 
-    print(f"Gemte {len(df_1)} rækker i vej_temp_1.csv")
-    print(f"Gemte {len(df_2)} rækker i vej_temp_2.csv")
+    print(f"Gemte {len(df_1)} rækker i vej_temp_1.csv (inkl. geografisk matchet dugpunkt)")
+    print(f"Gemte {len(df_2)} rækker i vej_temp_2.csv (inkl. geografisk matchet dugpunkt)")
 
-    # Udvælg 45 faste repræsentative punkter
     df_selected = pick_representative_points(df)
     df_selected.to_csv("vejtemp_udvalgte.csv", index=False)
-    print(f"Gemte {len(df_selected)} rækker i vejtemp_udvalgte.csv (faste repræsentative punkter)")
+    print(f"Gemte {len(df_selected)} rækker i vejtemp_udvalgte.csv (manuelt udvalgte punkter, inkl. dugpunkt)")
 
 
 if __name__ == "__main__":
+    # For at dette script kan køre, skal du sikre, at GeoPandas, Shapely og Requests er installeret.
     main()
