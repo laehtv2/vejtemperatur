@@ -30,7 +30,7 @@ transformer = Transformer.from_crs("EPSG:25832", "EPSG:4326", always_xy=True)
 # VIGTIGT: Denne liste SKAL opdateres med de STABILE StationID'er (device_id),
 # som matcher de 30 bedst fordelte koordinater.
 # BEMÆRK: Disse ID'er er stadig eksempler og SKAL erstattes efter Trin 3.
-SELECTED_STATION_IDS = ['Vejtemp_285', 'Vejtemp_238', 'Vejtemp_204', 'Vejtemp_145', 'Vejtemp_217', 'Vejtemp_215', 'Vejtemp_512', 'Vejtemp_227', 'Vejtemp_646', 'Vejtemp_189', 'Vejtemp_635', 'Vejtemp_214', 'Vejtemp_497', 'Vejtemp_362', 'Vejtemp_396', 'Vejtemp_39', 'Vejtemp_209', 'Vejtemp_587', 'Vejtemp_612', 'Vejtemp_568', 'Vejtemp_41', 'Vejtemp_45', 'Vejtemp_208', 'Vejtemp_593', 'Vejtemp_548', 'Vejtemp_543']
+SELECTED_STATION_IDS = ['Vejtemp_523', 'Vejtemp_591', 'Vejtemp_609', 'Vejtemp_448', 'Vejtemp_402', 'Vejtemp_459', 'Vejtemp_224', 'Vejtemp_284', 'Vejtemp_235', 'Vejtemp_257', 'Vejtemp_383', 'Vejtemp_429', 'Vejtemp_308', 'Vejtemp_247', 'Vejtemp_643', 'Vejtemp_157', 'Vejtemp_147', 'Vejtemp_119', 'Vejtemp_135', 'Vejtemp_31', 'Vejtemp_200', 'Vejtemp_204', 'Vejtemp_152', 'Vejtemp_345', 'Vejtemp_192', 'Vejtemp_544', 'Vejtemp_525', 'Vejtemp_586', 'Vejtemp_216', 'Vejtemp_153']
 
 # ---------------------------
 # DMI HENTNING (Uændret)
