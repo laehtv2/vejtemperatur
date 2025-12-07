@@ -27,9 +27,9 @@ DMI_DATETIME_WINDOW = "now-PT60M/now"
 # EPSG:25832 -> WGS84
 transformer = Transformer.from_crs("EPSG:25832", "EPSG:4326", always_xy=True)
 
-# VIGTIGT: Denne liste SKAL opdateres med de STABILE StationID'er (device_id)
+# VIGTIGT: Denne liste SKAL opdateres med de STABILE StationID'er (device_id),
 # som matcher de 30 bedst fordelte koordinater.
-# BEMÆRK: Disse ID'er er eksempler og skal erstattes efter Trin 3.
+# BEMÆRK: Disse ID'er er stadig eksempler og SKAL erstattes efter Trin 3.
 SELECTED_STATION_IDS: list[str] = [
     '5056', '7126', '6024', '1400', '6588', '7025', '6042', '6048', '6055', 
     '6445', '7140', '5998', '7162', '7192', '7170', '7188', '7154', '7116', 
@@ -85,7 +85,7 @@ def fetch_all_dmi_dewpoints(parameter_id: str) -> pd.DataFrame:
     return dmi_gdf
 
 # ---------------------------
-# VEJTEMP HENTNING & PARSING (Rettet: Bevarer ID og NAME for header-kompatibilitet)
+# VEJTEMP HENTNING & PARSING
 # ---------------------------
 
 def fetch_geojson(url: str) -> dict:
@@ -109,11 +109,11 @@ def parse_features(geojson: dict) -> list[dict]:
         station_id = props.get("device_id") 
 
         rows.append({
-            "ID": id_counter, # Bevarer den ustabile ID for output-kompatibilitet
-            "NAME": str(id_counter), # Laver et dummy NAME, der matcher det ustabile ID for output-kompatibilitet
-            "StationID": str(station_id) if station_id is not None else f"Vejtemp_{id_counter}", # Den STABILE ID, der bruges til udvælgelse
-            "Latitude": lat,
-            "Longitude": lon,
+            "ID": id_counter, # Til outputfil: Ustabilt, men nødvendigt for WSI Max
+            "NAME": str(id_counter), # Til outputfil: Ustabilt, men nødvendigt for WSI Max
+            "Latitude": lat, # Til outputfil
+            "Longitude": lon, # Til outputfil
+            "StationID": str(station_id) if station_id is not None else f"Vejtemp_{id_counter}", # Den STABILE ID, der bruges internt til udvælgelse
             "Vej_temp": props.get("roadSurfaceTemperature"),
             "Luft_temp": props.get("airTemperature"),
         })
@@ -168,15 +168,21 @@ def main():
     if "Precip" in df.columns:
         df = df.drop(columns=["Precip"])
         
-    # Nu bevares ID og NAME, som ønsket.
+    # Sørg for at kolonnerne er i den ønskede rækkefølge til WSI Max: ID, NAME, Latitude, Longitude, ...
+    cols = ["ID", "NAME", "Latitude", "Longitude", "StationID", "Vej_temp", "Luft_temp", "Dewpoint"]
+    
+    # Filtrer kolonner der findes i df (Dewpoint kan mangle ved DMI fejl)
+    cols_to_use = [c for c in cols if c in df.columns]
+    df = df[cols_to_use]
+
     df_1 = df.iloc[:500].copy()
     df_2 = df.iloc[500:].copy()
 
     df_1.to_csv("vej_temp_1.csv", index=False)
     df_2.to_csv("vej_temp_2.csv", index=False)
 
-    print(f"Gemte {len(df_1)} rækker i vej_temp_1.csv (bevarer ID, NAME, Latitude, Longitude)")
-    print(f"Gemte {len(df_2)} rækker i vej_temp_2.csv (bevarer ID, NAME, Latitude, Longitude)")
+    print(f"Gemte {len(df_1)} rækker i vej_temp_1.csv (Korrekt kolonneorden for WSI Max)")
+    print(f"Gemte {len(df_2)} rækker i vej_temp_2.csv (Korrekt kolonneorden for WSI Max)")
 
     df_selected = pick_representative_points(df)
     if not df_selected.empty:
