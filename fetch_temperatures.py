@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
 Henter vejtemperaturer fra Trafikkort og matcher med DMI dugpunkt via NÆRMESTE PUNKT.
-- Udvalgte stationer hentes nu via matchende STABILE koordinater fra ekstern CSV.
+- Udvalgte stationer hentes nu via matchende STABILE koordinater fra ekstern CSV
+  ved hjælp af robust SciPy/NumPy matching (løser GeoPandas ValueError).
 """
 
 from __future__ import annotations
@@ -9,6 +10,7 @@ import requests
 import pandas as pd
 from pyproj import Transformer
 import numpy as np
+from scipy.spatial.distance import cdist # Nyt, stabilt matching værktøj
 import json
 import time
 import datetime
@@ -101,11 +103,11 @@ def parse_features(geojson: dict) -> list[dict]:
         station_id = props.get("device_id") 
 
         rows.append({
-            "ID": id_counter, # Til outputfil: Ustabilt, men nødvendigt
-            "NAME": str(id_counter), # Til outputfil: Ustabilt, men nødvendigt
-            "Latitude": lat, # Til outputfil
-            "Longitude": lon, # Til outputfil
-            "StationID": str(station_id) if station_id is not None else f"Vejtemp_{id_counter}", # Den STABILE ID
+            "ID": id_counter,
+            "NAME": str(id_counter),
+            "Latitude": lat,
+            "Longitude": lon,
+            "StationID": str(station_id) if station_id is not None else f"Vejtemp_{id_counter}",
             "Vej_temp": props.get("roadSurfaceTemperature"),
             "Luft_temp": props.get("airTemperature"),
         })
@@ -115,55 +117,39 @@ def parse_features(geojson: dict) -> list[dict]:
 def pick_representative_points(df_api: pd.DataFrame) -> pd.DataFrame:
     """ 
     Udvælger repræsentative stationer ved at matche API-data mod
-    STABILE koordinater fra filen.
+    STABILE koordinater fra filen ved hjælp af SciPy/NumPy Cdist.
     """
     try:
         # Læs den stabile koordinatfil
         df_stable = pd.read_csv(STABLE_COORDS_FILE)
-        
-        # Omdøb kolonner for at matche den stabile fil's struktur
-        df_stable.rename(columns={'STABLE_ID': 'StationID', 
-                                  'LATITUDE': 'Latitude_Stable', 
-                                  'LONGITUDE': 'Longitude_Stable'}, inplace=True)
-        
     except FileNotFoundError:
         print(f"\nFATAL FEJL: Kunne ikke finde den stabile koordinatfil '{STABLE_COORDS_FILE}'. Sørg for at den ligger i dit repo.")
         return pd.DataFrame()
 
-    # 1. Konverter API-data (vejtemp) til GeoDataFrame
-    vejtemp_gdf = gpd.GeoDataFrame(
-        df_api.copy(), 
-        geometry=gpd.points_from_xy(df_api.Longitude, df_api.Latitude), 
-        crs="EPSG:4326"
-    )
+    # 1. Forbered koordinater som NumPy arrays
+    stable_coords = df_stable[['LATITUDE', 'LONGITUDE']].values
+    api_coords = df_api[['Latitude', 'Longitude']].values
 
-    # 2. Konverter de stabile referencekoordinater til GeoDataFrame
-    stable_gdf = gpd.GeoDataFrame(
-        df_stable.copy(), 
-        geometry=gpd.points_from_xy(df_stable.Longitude_Stable, df_stable.Latitude_Stable), 
-        crs="EPSG:4326"
-    )
-
-    # 3. Match Nærmeste Nabo (Stabil reference -> Vejtemp API)
-    # Find index i vejtemp_gdf (API data) af den nærmeste station for HVER stabil reference
-    nearest_api_idx = stable_gdf.geometry.apply(lambda stable_point: vejtemp_gdf.geometry.distance(stable_point).idxmin())
-
-    # 4. Filter for at sikre, at matchet er præcist (tolerance)
-    # Vi checker afstanden mellem det stabile punkt og det matchede punkt i API-dataen
-    min_distance = stable_gdf.geometry.apply(lambda stable_point: vejtemp_gdf.geometry.distance(stable_point).min())
+    # 2. Beregn afstandsmatrix (Euclidean distance on Lat/Lon)
+    # Dette er den robuste erstatning for GeoPandas apply()
+    distances = cdist(stable_coords, api_coords, metric='euclidean')
     
-    # Tolerance på 0.0001 grader (~10-15 meter) sikrer, at vi kun matcher de korrekte stationer
-    acceptable_matches = min_distance < 0.0001 
+    # 3. Find indexen i API-dataen for det tætteste match
+    # indices: index i df_api for den nærmeste station til hver stabil koordinat
+    indices = np.argmin(distances, axis=1)
 
-    # 5. Udvælg de matchede rækker fra API-dataen
-    # Vi bruger kun de indices, hvor matchet var acceptabelt.
-    selected_indices = nearest_api_idx[acceptable_matches].unique()
-
-    df_selected = vejtemp_gdf.loc[selected_indices].copy()
+    # 4. Tjek for tæt match (Validering af at stationen faktisk er der)
+    min_distances = np.min(distances, axis=1)
+    MAX_DISTANCE_TOLERANCE = 0.0001 # ~10-15 meter
     
-    # Drop geometry column for final CSV output
-    if 'geometry' in df_selected.columns:
-        df_selected = df_selected.drop(columns=['geometry'])
+    # Filtrer indices, hvor matchet var tæt nok
+    acceptable_indices = indices[min_distances < MAX_DISTANCE_TOLERANCE]
+    
+    # Sørg for unikke stationer
+    selected_indices = np.unique(acceptable_indices)
+
+    # 5. Udtræk de matchede rækker fra API-dataen
+    df_selected = df_api.iloc[selected_indices].copy()
         
     return df_selected.sort_values('StationID')
 
@@ -206,10 +192,9 @@ def main():
     if "Precip" in df.columns:
         df = df.drop(columns=["Precip"])
         
-    # Sørg for at kolonnerne er i den ønskede rækkefølge til WSI Max: ID, NAME, Latitude, Longitude, ...
+    # Sørg for at kolonnerne er i den ønskede rækkefølge til WSI Max
     cols = ["ID", "NAME", "Latitude", "Longitude", "StationID", "Vej_temp", "Luft_temp", "Dewpoint"]
     
-    # Filtrer kolonner der findes i df (Dewpoint kan mangle ved DMI fejl)
     cols_to_use = [c for c in cols if c in df.columns]
     df = df[cols_to_use]
 
@@ -222,7 +207,7 @@ def main():
     print(f"Gemte {len(df_1)} rækker i vej_temp_1.csv (Korrekt kolonneorden for WSI Max)")
     print(f"Gemte {len(df_2)} rækker i vej_temp_2.csv (Korrekt kolonneorden for WSI Max)")
 
-    # >>> HER BRUGES DEN NYE LOGIK <<<
+    # >>> HER BRUGES DEN NYE, STABILE OG ROBUSTE MATCHING <<<
     df_selected = pick_representative_points(df)
     
     if not df_selected.empty:
