@@ -50,44 +50,21 @@ def parse_features(geojson: dict) -> list[dict]:
         id_counter += 1
     return rows
 
-def pick_representative_points(df: pd.DataFrame, k: int = 45, seed: int = 42) -> pd.DataFrame:
+FIXED_IDS = [
+    27,28,76,103,118,148,150,177,178,187,195,209,215,225,237,
+    253,259,273,274,286,329,363,370,381,396,423,433,440,454,
+    457,464,498,508,523,526,530,542,547,561,570,577,584,615,
+    618,658
+]
+
+def pick_representative_points(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Udvælg k punkter fordelt over Danmark vha. KMeans.
-    Hvis selected_ids.json findes, brug IDs fra filen.
+    Brug de 45 faste stationer (FIXED_IDS) til vejtemp_udvalgte.csv.
     """
-    # Sortér DataFrame på ID for determinisme
     df_sorted = df.sort_values("ID").reset_index(drop=True)
-
-    # Hvis fil med valgte IDs findes, læs og returner de punkter
-    if os.path.exists(SELECTED_IDS_FILE):
-        with open(SELECTED_IDS_FILE, "r") as f:
-            selected_ids = json.load(f)
-        return df_sorted[df_sorted["ID"].isin(selected_ids)].sort_values("ID")
-
-    # Ellers lav clustering og gem IDs
-    coords = df_sorted[["Latitude", "Longitude"]].to_numpy()
-    kmeans = KMeans(n_clusters=k, random_state=seed, n_init="auto")
-    labels = kmeans.fit_predict(coords)
-    centers = kmeans.cluster_centers_
-
-    selected_indices = []
-    for i in range(k):
-        cluster_points = coords[labels == i]
-        cluster_indices = df_sorted.index[labels == i]
-        if len(cluster_points) == 0:
-            continue
-        center = centers[i]
-        dists = np.linalg.norm(cluster_points - center, axis=1)
-        nearest_idx = cluster_indices[np.argmin(dists)]
-        selected_indices.append(nearest_idx)
-
-    df_selected = df_sorted.loc[selected_indices].sort_values("ID")
-
-    # Gem de valgte IDs til næste kørsel
-    with open(SELECTED_IDS_FILE, "w") as f:
-        json.dump(df_selected["ID"].tolist(), f)
-
+    df_selected = df_sorted[df_sorted["ID"].isin(FIXED_IDS)].sort_values("ID")
     return df_selected
+
 
 def main():
     geojson = fetch_geojson(URL)
@@ -105,9 +82,10 @@ def main():
     print(f"Gemte {len(df_2)} rækker i vej_temp_2.csv")
 
     # Udvælg 45 faste repræsentative punkter
-    df_selected = pick_representative_points(df, k=45, seed=42)
+    df_selected = pick_representative_points(df)
     df_selected.to_csv("vejtemp_udvalgte.csv", index=False)
     print(f"Gemte {len(df_selected)} rækker i vejtemp_udvalgte.csv (faste repræsentative punkter)")
+
 
 if __name__ == "__main__":
     main()
