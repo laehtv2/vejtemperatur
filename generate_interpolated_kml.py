@@ -70,7 +70,7 @@ def temp_to_kml_color(temp: float, vmin: float, vmax: float) -> str:
     """ Oversætter temperatur til en KML farvestreng (AABBGGRR). """
     norm = colors.Normalize(vmin=vmax, vmax=vmin) 
     scaled_temp = norm(temp)
-    cmap = cm.get_cmap('YlGnBu_r') 
+    cmap = cm.get_cmap('Blues_r') 
     rgb = cmap(scaled_temp)[:3]  
     
     rr = int(rgb[0] * 255)
