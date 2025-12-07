@@ -1,30 +1,28 @@
 #!/usr/bin/env python3
 """
-Genererer to KML-filer med interpolerede områder fra vejtemperaturer:
-
-1. vejtemp_only.kml : områder med vejtemp < 0°C
-2. vejtemp_dugpunkt.kml : områder med risiko for glatføre (vejtemp + dugpunkt)
+Genererer interpolerede KML-filer OG et test-billede
 """
 
 import pandas as pd
 import numpy as np
 from scipy.interpolate import griddata
 import simplekml
+import matplotlib.pyplot as plt
 
 # ---------------------------
 # Parametre
 # ---------------------------
-GRID_SIZE = 200   # grid resolution
+GRID_SIZE = 300   # højere = glattere
 VEJTEMP_THRESHOLD = 6  # grader C
-RISK_LOW = 1
-RISK_MED = 2
-RISK_HIGH = 3
 
-# Farver (aabbggrr)
-COLOR_TEMP = "7f66ccff"   # lys blå
+COLOR_TEMP = "7f66ccff"
 COLOR_RISK_LOW = "7f66ccff"
 COLOR_RISK_MED = "7fff9966"
 COLOR_RISK_HIGH = "7f8b0000"
+
+# Bounding box over Danmark (kun land)
+LON_MIN, LON_MAX = 8.0, 12.7
+LAT_MIN, LAT_MAX = 54.5, 57.9
 
 # ---------------------------
 # Læs CSV
@@ -39,10 +37,10 @@ vejtemp = df["Vej_temp"].to_numpy()
 dugpunkt = df["Luft_temp"].to_numpy()
 
 # ---------------------------
-# Opret grid
+# Opret grid kun over Danmark
 # ---------------------------
-grid_lon = np.linspace(lons.min(), lons.max(), GRID_SIZE)
-grid_lat = np.linspace(lats.min(), lats.max(), GRID_SIZE)
+grid_lon = np.linspace(LON_MIN, LON_MAX, GRID_SIZE)
+grid_lat = np.linspace(LAT_MIN, LAT_MAX, GRID_SIZE)
 grid_lon, grid_lat = np.meshgrid(grid_lon, grid_lat)
 
 # Interpoler vejtemperatur
@@ -54,7 +52,21 @@ grid_dug = griddata(points=(lons, lats), values=dugpunkt,
                     xi=(grid_lon, grid_lat), method="linear")
 
 # ---------------------------
-# Funktion til at lave polygoner
+# Gem testbillede
+# ---------------------------
+plt.figure(figsize=(8,10))
+plt.imshow(grid_vejtemp, origin='lower',
+           extent=(LON_MIN, LON_MAX, LAT_MIN, LAT_MAX),
+           cmap='Blues', vmin=0, vmax=VEJTEMP_THRESHOLD)
+plt.colorbar(label="Vejtemperatur (°C)")
+plt.scatter(lons, lats, c='red', s=10, alpha=0.5)
+plt.title("Interpoleret vejtemperatur over Danmark")
+plt.savefig("test_vejtemp.png", dpi=200)
+plt.close()
+print("✔ Testbillede gemt: test_vejtemp.png")
+
+# ---------------------------
+# Funktion til KML polygoner
 # ---------------------------
 def create_polygons_from_grid(kml_obj, grid_vals, grid_lon, grid_lat, color_func, threshold_func):
     rows, cols = grid_vals.shape
@@ -79,7 +91,7 @@ def create_polygons_from_grid(kml_obj, grid_vals, grid_lon, grid_lat, color_func
             pol.style.polystyle.outline = 0
 
 # ---------------------------
-# KML 1: Vejtemperatur < 0°C
+# KML: Vejtemperatur
 # ---------------------------
 kml_temp = simplekml.Kml()
 create_polygons_from_grid(
@@ -94,22 +106,11 @@ kml_temp.save("vejtemp_only.kml")
 print("✔ KML gemt: vejtemp_only.kml")
 
 # ---------------------------
-# KML 2: Risiko for glatføre (vejtemp + dugpunkt)
+# KML: Risiko for glatføre
 # ---------------------------
-def risk_color(t, dew):
-    # Simpel risiko-logik
-    delta = t - dew
-    if delta < 0:
-        return COLOR_RISK_HIGH
-    elif delta < 1:
-        return COLOR_RISK_MED
-    else:
-        return COLOR_RISK_LOW
-
 kml_risk = simplekml.Kml()
 grid_risk = np.full_like(grid_vejtemp, np.nan)
 
-# Beregn risiko for hvert gridpunkt
 for i in range(GRID_SIZE):
     for j in range(GRID_SIZE):
         t = grid_vejtemp[i,j]
@@ -118,7 +119,7 @@ for i in range(GRID_SIZE):
             continue
         if t >= 0:
             continue
-        grid_risk[i,j] = t - dew  # brug delta til farve
+        grid_risk[i,j] = t - dew
 
 create_polygons_from_grid(
     kml_risk,
@@ -128,6 +129,5 @@ create_polygons_from_grid(
     color_func=lambda delta: COLOR_RISK_HIGH if delta < 0 else (COLOR_RISK_MED if delta < 1 else COLOR_RISK_LOW),
     threshold_func=lambda delta: not np.isnan(delta)
 )
-
 kml_risk.save("vejtemp_dugpunkt.kml")
 print("✔ KML gemt: vejtemp_dugpunkt.kml")
