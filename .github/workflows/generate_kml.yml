@@ -23,8 +23,8 @@ jobs:
         python -m pip install --upgrade pip
         pip install pandas simplekml
 
-    - name: Run generate_two_kml.py
-      run: python generate_two_kml.py
+    - name: Run generate_interpolated_kml.py
+      run: python generate_interpolated_kml.py
 
     - name: Commit KML files
       run: |
