@@ -44,11 +44,10 @@ PNG_RISK_MAP = "risk_map.png"
 NE_HIGHRES_FILE = "ne_10m_admin_0_countries.shp" 
 
 # Farver (AABBGGRR hex-format for simplekml)
-# Bliver nu kun brugt som fallback, men vi beholder den
-COLOR_RISK_HIGH = "7f0000ff"      # Transparent (7f) Rød
+COLOR_RISK_HIGH = "ff0000ff"      # NYT: FF (100% uigennemsigtig) Rød
 
 # ---------------------------
-# Hjælpefunktioner (Uændret)
+# Hjælpefunktioner
 # ---------------------------
 
 def idw_interpolation(stations: np.ndarray, values: np.ndarray, grid_points: np.ndarray, power: int = 2) -> np.ndarray:
@@ -70,13 +69,18 @@ def temp_to_kml_color(temp: float, vmin: float, vmax: float) -> str:
     """ Oversætter temperatur til en KML farvestreng (AABBGGRR). """
     norm = colors.Normalize(vmin=vmax, vmax=vmin) 
     scaled_temp = norm(temp)
-    cmap = cm.get_cmap('Blues_r') 
+    
+    # BRUG REN BLÅ CMAP
+    cmap = cm.get_cmap('Blues_r') # <-- Opdateret for renere farver
     rgb = cmap(scaled_temp)[:3]  
     
     rr = int(rgb[0] * 255)
     gg = int(rgb[1] * 255)
     bb = int(rgb[2] * 255)
-    alpha = 127
+    
+    # SÆT ALPHA TIL 255 (FF) FOR 100% UIGENNEMSIGTIGHED
+    alpha = 255 # <--- RETTET FRA 127
+    
     return f"{alpha:02x}{bb:02x}{gg:02x}{rr:02x}"
 
 def create_interpolated_polygons(interpolated_values: np.ndarray, x_range: np.ndarray, y_range: np.ndarray, mask_grid: np.ndarray) -> list[tuple[Polygon, float]]:
@@ -232,9 +236,7 @@ final_risk_mask = (interpolated_temp_full < RISK_TEMP_THRESHOLD) & \
                   (interpolated_risk_delta_full < RISK_DELTA_THRESHOLD) & \
                   grid_over_land_mask
 
-# --- NYT TRIN: GENERER RISIKO POLYGONER MED TEMPERATURVÆRDIER ---
-# Vi bruger den samme create_interpolated_polygons funktion, men med risiko-masken
-# Værdien vi knytter til polygoet (temp_val) er stadig den interpolerede vejtemp.
+# --- GENERER RISIKO POLYGONER MED TEMPERATURVÆRDIER ---
 risk_polygons_w_values = create_interpolated_polygons(
     interpolated_temp_full, x_range, y_range, final_risk_mask
 )
@@ -309,11 +311,11 @@ gpd.GeoSeries([den_wgs]).plot(ax=ax, color="lightgray", edgecolor="k")
 # Hvis der er data at plotte (Konturfyld)
 if not np.all(np.isnan(Z_temp)):
     levels = np.linspace(MAX_TEMP_COLOR, MIN_TEMP_COLOR, 11)
-    cp = ax.contourf(X_wgs, Y_wgs, Z_temp, levels=levels, cmap='Blues_r', extend='min', alpha=0.7, zorder=2)
-    ax.contour(X_wgs, Y_wgs, Z_temp, levels=levels, colors='k', linewidths=0.2, alpha=0.5, zorder=3)
+    # BRUG Blues_r CMAP
+    cp = ax.contourf(X_wgs, Y_wgs, Z_temp, levels=levels, cmap='Blues_r', extend='min', alpha=1.0, zorder=2) # Alpha sat til 1.0
+    ax.contour(X_wgs, Y_wgs, Z_temp, levels=levels, colors='k', linewidths=0.2, alpha=1.0, zorder=3)
     plt.colorbar(cp, ax=ax, label="Interpoleret Vejtemperatur (°C)", orientation='vertical', pad=0.02)
     
-# Brug lons_valid og vejtemp_valid, da de har Dewpoint data
 ax.set_xlim(LON_MIN, LON_MAX)
 ax.set_ylim(LAT_MIN, LAT_MAX)
 ax.set_title(f"IDW Interpolation: Vejtemperatur {MIN_TEMP_COLOR}°C til {MAX_TEMP_COLOR}°C")
@@ -327,15 +329,14 @@ fig, ax = plt.subplots(figsize=(8,10))
 gpd.GeoSeries([den_wgs]).plot(ax=ax, color="lightgray", edgecolor="k")
 
 # Vis de samlede risiko-områder
-# Vigtigt: Brug den kombinerede risiko-maske til plotting
-# Vi kan ikke plotte en union her, da vi ikke oprettede den, men vi kan bruge en scatter af de farvede punkter, der opfylder risiko-masken.
 if np.sum(final_risk_mask) > 0:
     # Konturfyld kun for de punkter, der er i risiko, farvet efter temperatur
     Z_risk_temp_masked = np.copy(Z_temp)
     Z_risk_temp_masked[~final_risk_mask.reshape((GRID_RESOLUTION, GRID_RESOLUTION))] = np.nan # Maskerer ud områder uden risiko
 
     levels = np.linspace(MAX_TEMP_COLOR, MIN_TEMP_COLOR, 11) # Samme farveskala som T_vej
-    cp = ax.contourf(X_wgs, Y_wgs, Z_risk_temp_masked, levels=levels, cmap='Blues_r', extend='min', alpha=0.7, zorder=2)
+    # BRUG Blues_r CMAP
+    cp = ax.contourf(X_wgs, Y_wgs, Z_risk_temp_masked, levels=levels, cmap='Blues_r', extend='min', alpha=1.0, zorder=2) # Alpha sat til 1.0
     
     # Farvebjælke skal vises (den repræsenterer temperaturen i risiko-områderne)
     plt.colorbar(cp, ax=ax, label="Temperatur i Risiko Områder (°C)", orientation='vertical', pad=0.02) 
