@@ -33,22 +33,24 @@ jobs:
           python fetch_temperatures.py
           python generate_interpolated_kml.py
 
+      # --- OPPDATERET FIL-LISTE ---
       - name: Upload KML artifacts
         uses: actions/upload-artifact@v4
         with:
           name: vejtemp_kml_output
           path: |
             vejtemp_only.kml
-            vejtemp_dugpunkt.kml # Tilføjet denne fil til artifacts
-            test_vejtemp.png
+            vejtemp_dugpunkt.kml
+            vejtemp_map.png  # NYT: Detaljeret temperaturkort
+            risk_map.png     # NYT: Detaljeret risikokort
       
-      # --- OPPDATERET COMMIT TRIN: Kun KML og PNG ---
+      # --- OPPDATERET COMMIT TRIN ---
       - name: Commit and push kml files
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           # Tilføj alle genererede filer
-          git add vejtemp_only.kml vejtemp_dugpunkt.kml test_vejtemp.png
+          git add vejtemp_only.kml vejtemp_dugpunkt.kml vejtemp_map.png risk_map.png
           git commit -m "Opdaterede KML/PNG via IDW [skip ci]" || echo "No changes to commit"
           git push
         env:
