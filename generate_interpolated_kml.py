@@ -212,7 +212,8 @@ union_risk = unary_union(risk_regions) if len(risk_regions) > 0 else None
 # ---------------------------
 # Begræns til Danmark: brug geopandas' naturalearth 'highres' data (ingen ekstern fil nødvendig)
 # ---------------------------
-world = gpd.read_file(gpd.datasets.get_path("naturalearth_highres"))
+NE_HIGHRES_FILE = "ne_10m_admin_0_countries.shp"
+world = gpd.read_file(NE_HIGHRES_FILE)
 # Naturalearth kan indeholde Grønland mv. Vi begrænser via bbox + country name to be safe.
 denmark = world[world["name"] == "Denmark"]
 if denmark.empty:
