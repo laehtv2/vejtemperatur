@@ -5,6 +5,7 @@ scikit-learn
 numpy
 scipy
 shapely
-geopandas==0.14.0  # Fastsat til ældre version
+geopandas==0.14.0  # Fastsat
+fiona==1.8.21      # NYT: Fastsat Fiona for at matche GeoPandas
 simplekml
 matplotlib
