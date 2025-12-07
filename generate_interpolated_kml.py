@@ -234,8 +234,8 @@ final_risk_mask = (interpolated_temp_full < RISK_TEMP_THRESHOLD) & \
 
 grid_spacing_m = x_range[1] - x_range[0]  
 cell_buffer = grid_spacing_m * 0.7 
-# Brug den nye maske til at skabe den samlede risiko polygon
-union_risk = create_single_union_polygon(interpolated_risk_delta_full, grid_points_m, final_risk_mask, cell_buffer)
+# RETTET FUNKTIONSKALD: Fjerner overflødigt argument
+union_risk = create_single_union_polygon(grid_points_m, final_risk_mask, cell_buffer)
 
 # Funktion til at klippe geometri (bruges til at klippe den samlede risiko polygon)
 def clip_to_land(geom):
