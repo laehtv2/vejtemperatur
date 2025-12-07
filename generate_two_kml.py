@@ -34,7 +34,7 @@ for _, r in df.iterrows():
         t = float(r["Vej_temp"])
     except:
         continue
-    if t < 0:
+    if t < 6:
         p = kml_temp.newpoint(
             name=f"ID {r['ID']} Vejtemp {t}°C",
             coords=[(r["Longitude"], r["Latitude"])]
