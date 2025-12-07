@@ -15,7 +15,7 @@ import simplekml
 # Parametre
 # ---------------------------
 GRID_SIZE = 200   # grid resolution
-VEJTEMP_THRESHOLD = 0  # grader C
+VEJTEMP_THRESHOLD = 6  # grader C
 RISK_LOW = 1
 RISK_MED = 2
 RISK_HIGH = 3
