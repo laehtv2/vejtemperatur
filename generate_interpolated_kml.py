@@ -314,7 +314,6 @@ if not np.all(np.isnan(Z_temp)):
     plt.colorbar(cp, ax=ax, label="Interpoleret Vejtemperatur (°C)", orientation='vertical', pad=0.02)
     
 # Brug lons_valid og vejtemp_valid, da de har Dewpoint data
-sc_temp = ax.scatter(lons_valid, lats_valid, c=vejtemp_valid, cmap="Reds", s=40, edgecolor='k', zorder=5) 
 ax.set_xlim(LON_MIN, LON_MAX)
 ax.set_ylim(LAT_MIN, LAT_MAX)
 ax.set_title(f"IDW Interpolation: Vejtemperatur {MIN_TEMP_COLOR}°C til {MAX_TEMP_COLOR}°C")
@@ -340,11 +339,6 @@ if np.sum(final_risk_mask) > 0:
     
     # Farvebjælke skal vises (den repræsenterer temperaturen i risiko-områderne)
     plt.colorbar(cp, ax=ax, label="Temperatur i Risiko Områder (°C)", orientation='vertical', pad=0.02) 
-
-# Scatterplot for station data (delta)
-sc_risk = ax.scatter(lons_valid, lats_valid, c=risk_deltas_valid, cmap="Reds", s=40, edgecolor='k', zorder=5) 
-# Vi viser Delta værdien på stationerne for at vise, hvilke stationer der bidrager til risikoen
-# plt.colorbar(sc_risk, ax=ax, label="Vejtemp - Dugpunkt Delta (°C)", orientation='vertical', pad=0.02) 
 
 ax.set_xlim(LON_MIN, LON_MAX)
 ax.set_ylim(LAT_MIN, LAT_MAX)
