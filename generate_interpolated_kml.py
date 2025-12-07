@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """
-Genererer KML med cirkler omkring observationer
+Genererer KML med cirkler omkring observationer under grænseværdier
 og et testbillede
-(uden Danmark-maskering)
 """
 
 import pandas as pd
@@ -45,11 +44,13 @@ plt.close()
 print("✔ Testbillede gemt: test_vejtemp.png")
 
 # ---------------------------
-# Funktion til at tegne cirkler i KML
+# Funktion til at tegne cirkler i KML under grænse
 # ---------------------------
-def add_circles_to_kml(kml_obj, lons, lats, values, radius_deg, color_func):
+def add_circles_to_kml_under_threshold(kml_obj, lons, lats, values, radius_deg, threshold, color_func):
     for lon, lat, val in zip(lons, lats, values):
         if np.isnan(val):
+            continue
+        if val >= threshold:  # spring punkter over, der ikke er under grænsen
             continue
         pol = kml_obj.newpolygon()
         # Cirkel som polygon med 20 punkter
@@ -64,20 +65,21 @@ def add_circles_to_kml(kml_obj, lons, lats, values, radius_deg, color_func):
         pol.style.polystyle.outline = 0
 
 # ---------------------------
-# KML: Vejtemperatur
+# KML: Vejtemperatur (kun under threshold)
 # ---------------------------
 kml_temp = simplekml.Kml()
-add_circles_to_kml(
+add_circles_to_kml_under_threshold(
     kml_temp,
     lons, lats, vejtemp,
     radius_deg=CIRCLE_RADIUS_DEG,
-    color_func=lambda val: COLOR_TEMP if val < VEJTEMP_THRESHOLD else COLOR_RISK_LOW
+    threshold=VEJTEMP_THRESHOLD,
+    color_func=lambda val: COLOR_TEMP
 )
 kml_temp.save("vejtemp_only.kml")
 print("✔ KML gemt: vejtemp_only.kml")
 
 # ---------------------------
-# KML: Risiko for glatføre
+# KML: Risiko for glatføre (kun negative værdier)
 # ---------------------------
 kml_risk = simplekml.Kml()
 risk_vals = []
@@ -87,10 +89,11 @@ for t, dew in zip(vejtemp, dugpunkt):
     else:
         risk_vals.append(t - dew)
 
-add_circles_to_kml(
+add_circles_to_kml_under_threshold(
     kml_risk,
     lons, lats, risk_vals,
     radius_deg=CIRCLE_RADIUS_DEG,
+    threshold=0,  # kun negative værdier
     color_func=lambda delta: COLOR_RISK_HIGH if delta < 0 else (COLOR_RISK_MED if delta < 1 else COLOR_RISK_LOW)
 )
 kml_risk.save("vejtemp_dugpunkt.kml")
