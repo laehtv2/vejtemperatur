@@ -2,14 +2,13 @@
 """
 Genererer KML med cirkler omkring observationer
 og et testbillede
+(uden Danmark-maskering)
 """
 
 import pandas as pd
 import numpy as np
 import simplekml
 import matplotlib.pyplot as plt
-from shapely.geometry import Point
-import geopandas as gpd
 
 # ---------------------------
 # Parametre
@@ -35,15 +34,6 @@ vejtemp = df["Vej_temp"].to_numpy()
 dugpunkt = df["Luft_temp"].to_numpy()
 
 # ---------------------------
-# Læs Danmark-geojson til maske
-# ---------------------------
-dk_shape = gpd.read_file("denmark_land.geojson")  # Danmark landpolygon
-
-def is_in_denmark(lon, lat):
-    point = Point(lon, lat)
-    return dk_shape.contains(point).any()
-
-# ---------------------------
 # Gem testbillede
 # ---------------------------
 plt.figure(figsize=(8,10))
@@ -57,10 +47,8 @@ print("✔ Testbillede gemt: test_vejtemp.png")
 # ---------------------------
 # Funktion til at tegne cirkler i KML
 # ---------------------------
-def add_circles_to_kml(kml_obj, lons, lats, values, radius_deg, color_func, mask_func=None):
+def add_circles_to_kml(kml_obj, lons, lats, values, radius_deg, color_func):
     for lon, lat, val in zip(lons, lats, values):
-        if mask_func is not None and not mask_func(lon, lat):
-            continue
         if np.isnan(val):
             continue
         pol = kml_obj.newpolygon()
@@ -83,8 +71,7 @@ add_circles_to_kml(
     kml_temp,
     lons, lats, vejtemp,
     radius_deg=CIRCLE_RADIUS_DEG,
-    color_func=lambda val: COLOR_TEMP if val < VEJTEMP_THRESHOLD else COLOR_RISK_LOW,
-    mask_func=is_in_denmark
+    color_func=lambda val: COLOR_TEMP if val < VEJTEMP_THRESHOLD else COLOR_RISK_LOW
 )
 kml_temp.save("vejtemp_only.kml")
 print("✔ KML gemt: vejtemp_only.kml")
@@ -104,8 +91,7 @@ add_circles_to_kml(
     kml_risk,
     lons, lats, risk_vals,
     radius_deg=CIRCLE_RADIUS_DEG,
-    color_func=lambda delta: COLOR_RISK_HIGH if delta < 0 else (COLOR_RISK_MED if delta < 1 else COLOR_RISK_LOW),
-    mask_func=is_in_denmark
+    color_func=lambda delta: COLOR_RISK_HIGH if delta < 0 else (COLOR_RISK_MED if delta < 1 else COLOR_RISK_LOW)
 )
 kml_risk.save("vejtemp_dugpunkt.kml")
 print("✔ KML gemt: vejtemp_dugpunkt.kml")
