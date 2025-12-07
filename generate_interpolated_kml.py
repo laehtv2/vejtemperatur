@@ -341,8 +341,10 @@ if union_risk_clipped is not None and not union_risk_clipped.is_empty:
     # Brug den røde farve (fra COLOR_RISK_HIGH = "7f0000ff" -> #ff0000 i Matplotlib RGB)
     poly_gs.plot(ax=ax, color="#ff0000", alpha=0.5, zorder=2)
     
-ax.scatter(lons, lats, c=risk_vals, cmap="Reds", s=40, edgecolor='k', zorder=5) # Plot stations med risk_vals
-plt.colorbar(sc, ax=ax, label="Vejtemp - Dugpunkt Delta (°C)", orientation='vertical', pad=0.02)
+# Definer scatterplot-variabelen her (f.eks. sc_risk)
+# Her plotter vi vejstationerne farvet efter glatførerisiko (risk_vals)
+sc_risk = ax.scatter(lons, lats, c=risk_vals, cmap="Reds", s=40, edgecolor='k', zorder=5) # <--- NY DEFINITION
+plt.colorbar(sc_risk, ax=ax, label="Vejtemp - Dugpunkt Delta (°C)", orientation='vertical', pad=0.02) # <--- BRUG sc_risk
 
 ax.set_xlim(LON_MIN, LON_MAX)
 ax.set_ylim(LAT_MIN, LAT_MAX)
