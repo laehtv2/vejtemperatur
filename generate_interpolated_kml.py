@@ -30,7 +30,7 @@ BUFFER_M = 10000                # 10 km buffer (meter)
 N_VOR_POLY_VERTS = 100          # bruges i finite polygon konstruktion (ikke kritisk)
 
 # Bounding box over Danmark (bruges til at trimme Voronoi)
-LON_MIN, LON_MAX = 8.0, 12.7
+LON_MIN, LON_MAX = 8.0, 15.5
 LAT_MIN, LAT_MAX = 54.5, 57.9
 
 # Filnavne (som du ønskede)
