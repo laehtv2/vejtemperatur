@@ -11,18 +11,29 @@ jobs:
 
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4 # Opdateret til v4 for bedre token-håndtering
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
 
-      - name: Install dependencies
-        # BEDRE: Brug requirements.txt, som er i dit repo
+      # --- NYT TRIN: Installer systemafhængigheder for GeoPandas (Nødvendigt for IDW) ---
+      - name: Install System Dependencies (GeoStack)
         run: |
-          pip install -r requirements.txt 
-        # Alternativt: pip install numpy pandas matplotlib shapely geopandas pyproj lxml simplekml scikit-learn requests scipy
+          sudo apt-get update
+          sudo apt-get install -y libgdal-dev libgeos-dev libproj-dev
+      
+      - name: Install Python dependencies
+        run: |
+          pip install -r requirements.txt
+      
+      # --- NYT TRIN: Download og Unzip Natural Earth Highres Data (Nødvendigt for IDW) ---
+      - name: Download Natural Earth Highres Data
+        run: |
+          # Henter den fil, som generate_interpolated_kml.py nu forventer
+          wget https://www.naturalearthdata.com/downloads/10m-cultural-vectors/ne_10m_admin_0_countries.zip
+          unzip ne_10m_admin_0_countries.zip
 
       - name: Run vejtemp script
         run: |
@@ -35,14 +46,17 @@ jobs:
           name: vejtemp_kml_output
           path: |
             vejtemp_only.kml
+            vejtemp_dugpunkt.kml # Tilføjet denne fil til artifacts
             test_vejtemp.png
       
+      # --- OPPDATERET COMMIT TRIN: Kun KML og PNG ---
       - name: Commit and push kml files
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add vejtemp_only.kml vejtemp_dugpunkt.kml
-          git commit -m "Opdaterede kml-filer [skip ci]" || echo "No changes to commit"
+          # Tilføj alle genererede filer
+          git add vejtemp_only.kml vejtemp_dugpunkt.kml test_vejtemp.png
+          git commit -m "Opdaterede KML/PNG via IDW [skip ci]" || echo "No changes to commit"
           git push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
