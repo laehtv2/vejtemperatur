@@ -26,7 +26,7 @@ import matplotlib.pyplot as plt
 # ---------------------------
 # Parametre
 # ---------------------------
-VEJTEMP_THRESHOLD = 8             # Tærskel for "kold" vejtemp (°C)
+VEJTEMP_THRESHOLD = 7             # Tærskel for "kold" vejtemp (°C)
 GRID_RESOLUTION = 200             # Opløsning af interpolationsgrid (f.eks. 200x200)
 IDW_POWER = 2                     # Inverse Distance Weighting Power (typisk 2)
 
