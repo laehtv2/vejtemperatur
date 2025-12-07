@@ -26,10 +26,15 @@ DMI_DATETIME_WINDOW = "now-PT60M/now"
 # EPSG:25832 -> WGS84
 transformer = Transformer.from_crs("EPSG:25832", "EPSG:4326", always_xy=True)
 
-SELECTED_IDS = [284, 237, 203, 145, 216, 214, 509, 226, 642, 188, 631, 213, 494, 361, 395, 40, 208, 584, 608, 565, 42, 46, 207, 590, 545, 540]
+# VIGTIGT: Denne liste SKAL indeholde de STABILE StationID'er (device_id) 
+# fra API'en, IKKE de dynamiske ID'er (1, 2, 3, ...).
+# Du skal køre koden ÉN gang for at finde de korrekte StationID'er (se Trin 2).
+SELECTED_STATION_IDS: list[str] = [
+    # Indsæt de 30 stabile StationID'er her efter du har fundet dem.
+] 
 
 # ---------------------------
-# DMI HENTNING (OPPDATERET TIL ALLE STATIONER)
+# DMI HENTNING (Uændret)
 # ---------------------------
 
 def fetch_all_dmi_dewpoints(parameter_id: str) -> pd.DataFrame:
@@ -77,7 +82,7 @@ def fetch_all_dmi_dewpoints(parameter_id: str) -> pd.DataFrame:
     return dmi_gdf
 
 # ---------------------------
-# VEJTEMP HENTNING & PARSING (uændret)
+# VEJTEMP HENTNING & PARSING (Rettet til at gemme StationID)
 # ---------------------------
 
 def fetch_geojson(url: str) -> dict:
@@ -97,12 +102,11 @@ def parse_features(geojson: dict) -> list[dict]:
         if coords and len(coords) >= 2:
             lon, lat = transformer.transform(coords[0], coords[1])
 
-        # StationID er ikke længere nødvendig til matching
-        station_id = props.get("device_id") 
+        station_id = props.get("device_id") # Dette er den STABILE ID!
 
         rows.append({
             "ID": id_counter,
-            "StationID": station_id if station_id else f"Vejtemp_{id_counter}",
+            "StationID": station_id if station_id else f"Vejtemp_{id_counter}", # Brug StationID til udvælgelse
             "Latitude": lat,
             "Longitude": lon,
             "Vej_temp": props.get("roadSurfaceTemperature"),
@@ -112,8 +116,13 @@ def parse_features(geojson: dict) -> list[dict]:
     return rows
 
 def pick_representative_points(df: pd.DataFrame) -> pd.DataFrame:
-    """ Bruger den faste liste SELECTED_IDS til at vælge repræsentative stationer. """
-    df_selected = df[df["ID"].isin(SELECTED_IDS)].sort_values("ID")
+    """ Bruger den faste liste SELECTED_STATION_IDS til at vælge repræsentative stationer. """
+    if not SELECTED_STATION_IDS:
+        print("\nADVARSEL: SELECTED_STATION_IDS er tom. Returnerer alle stationer. Find de stabile ID'er først.")
+        return pd.DataFrame() # Retur tom DF, hvis ID'er mangler
+        
+    # Vælger nu baseret på StationID, som er den STABILE ID.
+    df_selected = df[df["StationID"].astype(str).isin(map(str, SELECTED_STATION_IDS))].sort_values("StationID")
     return df_selected
 
 
@@ -138,10 +147,6 @@ def main():
         )
         
         # 2. Match Nærmeste Nabo (DMI -> Vejtemp)
-        # Dette udfører en spatial join for at finde den nærmeste DMI-station til hver vejstation.
-        # Vi matcher i WGS84 for at holde det simpelt, men en projiceret CRS ville være mere præcis.
-        
-        # Find index for nærmeste DMI station til hver vejtemp station
         nearest_dmi_idx = vejtemp_gdf.geometry.apply(lambda point: dmi_gdf.geometry.distance(point).idxmin())
         
         # Kopier dugpunktsværdien over
@@ -153,19 +158,23 @@ def main():
     # Fjern 'Precip' kolonnen, hvis den eksisterer
     if "Precip" in df.columns:
         df = df.drop(columns=["Precip"])
-    
-    df_1 = df.iloc[:500]
-    df_2 = df.iloc[500:]
+        
+    # VIGTIGT: Gem StationID i CSV'erne
+    df_save = df.drop(columns=["ID", "NAME"]) # Drop de ustabile kolonner
+    df_1 = df_save.iloc[:500]
+    df_2 = df_save.iloc[500:]
 
     df_1.to_csv("vej_temp_1.csv", index=False)
     df_2.to_csv("vej_temp_2.csv", index=False)
 
-    print(f"Gemte {len(df_1)} rækker i vej_temp_1.csv (inkl. geografisk matchet dugpunkt)")
-    print(f"Gemte {len(df_2)} rækker i vej_temp_2.csv (inkl. geografisk matchet dugpunkt)")
+    print(f"Gemte {len(df_1)} rækker i vej_temp_1.csv (inkl. geografisk matchet dugpunkt og STABIL StationID)")
+    print(f"Gemte {len(df_2)} rækker i vej_temp_2.csv (inkl. geografisk matchet dugpunkt og STABIL StationID)")
 
     df_selected = pick_representative_points(df)
-    df_selected.to_csv("vejtemp_udvalgte.csv", index=False)
-    print(f"Gemte {len(df_selected)} rækker i vejtemp_udvalgte.csv (manuelt udvalgte punkter, inkl. dugpunkt)")
+    if not df_selected.empty:
+        df_selected_final = df_selected.drop(columns=["ID", "NAME"]) # Drop de ustabile kolonner
+        df_selected_final.to_csv("vejtemp_udvalgte.csv", index=False)
+        print(f"Gemte {len(df_selected_final)} rækker i vejtemp_udvalgte.csv (stabil udvælgelse)")
 
 
 if __name__ == "__main__":
