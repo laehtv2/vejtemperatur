@@ -30,12 +30,7 @@ transformer = Transformer.from_crs("EPSG:25832", "EPSG:4326", always_xy=True)
 # VIGTIGT: Denne liste SKAL opdateres med de STABILE StationID'er (device_id),
 # som matcher de 30 bedst fordelte koordinater.
 # BEMÆRK: Disse ID'er er stadig eksempler og SKAL erstattes efter Trin 3.
-SELECTED_STATION_IDS: list[str] = [
-    '5056', '7126', '6024', '1400', '6588', '7025', '6042', '6048', '6055', 
-    '6445', '7140', '5998', '7162', '7192', '7170', '7188', '7154', '7116', 
-    '5057', '6147', '7060', '7061', '6049', '5935', '5944', '5926', '5917', 
-    '5937', '5951', '5977'
-] 
+SELECTED_STATION_IDS = ['Vejtemp_285', 'Vejtemp_238', 'Vejtemp_204', 'Vejtemp_145', 'Vejtemp_217', 'Vejtemp_215', 'Vejtemp_512', 'Vejtemp_227', 'Vejtemp_646', 'Vejtemp_189', 'Vejtemp_635', 'Vejtemp_214', 'Vejtemp_497', 'Vejtemp_362', 'Vejtemp_396', 'Vejtemp_39', 'Vejtemp_209', 'Vejtemp_587', 'Vejtemp_612', 'Vejtemp_568', 'Vejtemp_41', 'Vejtemp_45', 'Vejtemp_208', 'Vejtemp_593', 'Vejtemp_548', 'Vejtemp_543']
 
 # ---------------------------
 # DMI HENTNING (Uændret)
