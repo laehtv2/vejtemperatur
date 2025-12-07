@@ -215,10 +215,18 @@ union_risk = unary_union(risk_regions) if len(risk_regions) > 0 else None
 NE_HIGHRES_FILE = "ne_10m_admin_0_countries.shp"
 world = gpd.read_file(NE_HIGHRES_FILE)
 # Naturalearth kan indeholde Grønland mv. Vi begrænser via bbox + country name to be safe.
-denmark = world[world["name"] == "Denmark"]
+denmark = world[world["SOVEREIGNT"] == "Denmark"] 
+
 if denmark.empty:
-    # Fallback: prøv iso_a3 == 'DNK'
-    denmark = world[world["iso_a3"] == "DNK"]
+    # Hvis SOVEREIGNT ikke virker, prøv ISO-koden
+    denmark = world[world["ADM0_A3"] == "DNK"] # <-- Rettet fra 'iso_a3' til 'ADM0_A3'
+
+    if denmark.empty:
+        # Hvis det stadig er tomt, prøv det almindelige administrativt navn
+        denmark = world[world["ADMIN"] == "Denmark"] 
+
+        if denmark.empty:
+             raise SystemExit("Kunne ikke finde 'Denmark' i high-res datasættet ved hjælp af SOVEREIGNT, ADM0_A3 eller ADMIN kolonner.")
 
 # Opret bbox (i WGS84) og transform til meter CRS
 bbox_wgs = box(LON_MIN, LAT_MIN, LON_MAX, LAT_MAX)
