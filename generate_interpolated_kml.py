@@ -3,9 +3,8 @@
 IDW (Inverse Distance Weighting) interpolering for at generere KML-områder
 for "kolde" vejtemperaturområder og glatførerisiko.
 
-- Vejtemp interpolering: Bruger rå Vejtemp.
-- Risiko interpolering: Bruger Delta (Vejtemp - DMI Dugpunkt).
-- Risiko KML: Viser områder, hvor (Interpoleret Vejtemp < 0°C) OG (Interpoleret Delta < 0°C).
+- Vejtemp KML (vejtemp_only.kml): Farvet af interpoleret Vejtemp (< 7.0°C).
+- Risiko KML (vejtemp_dugpunkt.kml): Farvet af interpoleret Vejtemp, men kun for områder der opfylder (T_vej < 0°C) OG (Delta < 0°C).
 - Interpolerer KUN over land.
 """
 import os
@@ -27,7 +26,7 @@ VEJTEMP_THRESHOLD = 7.0           # Tærskel for farveskala (lyseblå ved 7.0)
 MIN_TEMP_COLOR = 7.0              # Start for farveskalaen
 MAX_TEMP_COLOR = -3.0             # Slut for farveskalaen (mørkeblå ved -3.0)
 
-RISK_TEMP_THRESHOLD = 0.0         # Vejtemp skal være under 0°C for at have risiko
+RISK_TEMP_THRESHOLD = 7.0         # Vejtemp skal være under 0°C for at have risiko
 RISK_DELTA_THRESHOLD = 0.0        # Delta (T_vej - T_dug) skal være under 0°C for at have risiko
 
 GRID_RESOLUTION = 200             
@@ -45,10 +44,11 @@ PNG_RISK_MAP = "risk_map.png"
 NE_HIGHRES_FILE = "ne_10m_admin_0_countries.shp" 
 
 # Farver (AABBGGRR hex-format for simplekml)
+# Bliver nu kun brugt som fallback, men vi beholder den
 COLOR_RISK_HIGH = "7f0000ff"      # Transparent (7f) Rød
 
 # ---------------------------
-# Hjælpefunktioner
+# Hjælpefunktioner (Uændret)
 # ---------------------------
 
 def idw_interpolation(stations: np.ndarray, values: np.ndarray, grid_points: np.ndarray, power: int = 2) -> np.ndarray:
@@ -145,11 +145,11 @@ df = df.dropna(subset=["Longitude","Latitude", "Vej_temp", "Dewpoint"])
 lons = df["Longitude"].to_numpy()
 lats = df["Latitude"].to_numpy()
 vejtemp = df["Vej_temp"].to_numpy()
-dewpoint = df["Dewpoint"].to_numpy() # NYT: Bruger DMI Dugpunkt
+dewpoint = df["Dewpoint"].to_numpy() 
 
 # Beregn Delta (Vejtemp - Dugpunkt) for interpolering
 risk_deltas = vejtemp - dewpoint
-valid_data_mask = ~np.isnan(risk_deltas) # Maske for stationer der har valid data (ingen NaN)
+valid_data_mask = ~np.isnan(risk_deltas) 
 
 # Konverter til GeoDataFrame og projicer til meter (EPSG:3857)
 gdf = gpd.GeoDataFrame(df.copy(), geometry=gpd.points_from_xy(df.Longitude, df.Latitude), crs="EPSG:4326")
@@ -159,7 +159,7 @@ vejtemp_valid = vejtemp[valid_data_mask]
 risk_deltas_valid = risk_deltas[valid_data_mask]
 
 # --- Filter station data ned til kun de gyldige datapunkter ---
-df_valid = df[valid_data_mask].copy() # Bruges til plotting af punkter
+df_valid = df[valid_data_mask].copy() 
 lons_valid = df_valid["Longitude"].to_numpy()
 lats_valid = df_valid["Latitude"].to_numpy()
 
@@ -232,18 +232,14 @@ final_risk_mask = (interpolated_temp_full < RISK_TEMP_THRESHOLD) & \
                   (interpolated_risk_delta_full < RISK_DELTA_THRESHOLD) & \
                   grid_over_land_mask
 
-grid_spacing_m = x_range[1] - x_range[0]  
-cell_buffer = grid_spacing_m * 0.7 
-# RETTET FUNKTIONSKALD: Fjerner overflødigt argument
-union_risk = create_single_union_polygon(grid_points_m, final_risk_mask, cell_buffer)
+# --- NYT TRIN: GENERER RISIKO POLYGONER MED TEMPERATURVÆRDIER ---
+# Vi bruger den samme create_interpolated_polygons funktion, men med risiko-masken
+# Værdien vi knytter til polygoet (temp_val) er stadig den interpolerede vejtemp.
+risk_polygons_w_values = create_interpolated_polygons(
+    interpolated_temp_full, x_range, y_range, final_risk_mask
+)
+print(f"✔ Risiko områder oprettet via IDW ({len(risk_polygons_w_values)} grid-celler med T<0 & Delta<0).")
 
-# Funktion til at klippe geometri (bruges til at klippe den samlede risiko polygon)
-def clip_to_land(geom):
-    if geom is None or geom.is_empty: return None
-    return geom.intersection(denmark_m)
-
-union_risk_clipped = clip_to_land(union_risk)
-print("✔ Risiko områder oprettet via IDW (Temp < 0°C OG Delta < 0°C).")
 
 # ---------------------------
 # Gem KML-filer
@@ -272,17 +268,25 @@ for poly_m, temp_val in cold_polygons_w_values:
 kml_temp.save(KML_VEJTEMP)
 print(f"✔ KML gemt: {KML_VEJTEMP} (farvet interpoleret map {MIN_TEMP_COLOR}°C til {MAX_TEMP_COLOR}°C)")
 
-# Risiko KML
+# Risiko KML (DYNAMISK FARVE - Samme skala som Vejtemp)
 kml_risk = simplekml.Kml()
-polys_r = geom_to_lonlat_coords(union_risk_clipped)
-for coords in polys_r:
-    pol = kml_risk.newpolygon()
-    pol.outerboundaryis.coords = coords
-    pol.style.polystyle.color = COLOR_RISK_HIGH
-    pol.style.polystyle.fill = 1
-    pol.style.polystyle.outline = 0
+for poly_m, temp_val in risk_polygons_w_values:
+    # Klip hver celle til den fine landmaske
+    clipped_poly = poly_m.intersection(denmark_m) 
+    if clipped_poly is None or clipped_poly.is_empty: continue
+        
+    polys_coords_lonlat = geom_to_lonlat_coords(clipped_poly)
+    # BRUG TEMPERATUR FARVESKALAEN HER!
+    kml_color = temp_to_kml_color(temp_val, MIN_TEMP_COLOR, MAX_TEMP_COLOR)
+    
+    for coords in polys_coords_lonlat:
+        pol = kml_risk.newpolygon()
+        pol.outerboundaryis.coords = coords
+        pol.style.polystyle.color = kml_color # Dynamisk farve fra T_vej
+        pol.style.polystyle.fill = 1
+        pol.style.polystyle.outline = 0
 kml_risk.save(KML_RISK)
-print(f"✔ KML gemt: {KML_RISK} (interpolerede områder for glatføre T<0 & Delta<0)")
+print(f"✔ KML gemt: {KML_RISK} (interpolerede områder for glatføre T<0 & Delta<0 - Farvet af Vejtemp)")
 
 # ---------------------------
 # Gem testbilleder (To filer - Sikker Gemning)
@@ -324,17 +328,27 @@ fig, ax = plt.subplots(figsize=(8,10))
 gpd.GeoSeries([den_wgs]).plot(ax=ax, color="lightgray", edgecolor="k")
 
 # Vis de samlede risiko-områder
-if union_risk_clipped is not None and not union_risk_clipped.is_empty:
-    poly_gs = gpd.GeoSeries([union_risk_clipped], crs="EPSG:3857").to_crs(epsg=4326)
-    poly_gs.plot(ax=ax, color="#ff0000", alpha=0.5, zorder=2)
+# Vigtigt: Brug den kombinerede risiko-maske til plotting
+# Vi kan ikke plotte en union her, da vi ikke oprettede den, men vi kan bruge en scatter af de farvede punkter, der opfylder risiko-masken.
+if np.sum(final_risk_mask) > 0:
+    # Konturfyld kun for de punkter, der er i risiko, farvet efter temperatur
+    Z_risk_temp_masked = np.copy(Z_temp)
+    Z_risk_temp_masked[~final_risk_mask.reshape((GRID_RESOLUTION, GRID_RESOLUTION))] = np.nan # Maskerer ud områder uden risiko
+
+    levels = np.linspace(MAX_TEMP_COLOR, MIN_TEMP_COLOR, 11) # Samme farveskala som T_vej
+    cp = ax.contourf(X_wgs, Y_wgs, Z_risk_temp_masked, levels=levels, cmap='YlGnBu_r', extend='min', alpha=0.7, zorder=2)
     
-# Scatterplot og Colorbar for station data (delta)
+    # Farvebjælke skal vises (den repræsenterer temperaturen i risiko-områderne)
+    plt.colorbar(cp, ax=ax, label="Temperatur i Risiko Områder (°C)", orientation='vertical', pad=0.02) 
+
+# Scatterplot for station data (delta)
 sc_risk = ax.scatter(lons_valid, lats_valid, c=risk_deltas_valid, cmap="Reds", s=40, edgecolor='k', zorder=5) 
-plt.colorbar(sc_risk, ax=ax, label="Vejtemp - Dugpunkt Delta (°C)", orientation='vertical', pad=0.02) 
+# Vi viser Delta værdien på stationerne for at vise, hvilke stationer der bidrager til risikoen
+# plt.colorbar(sc_risk, ax=ax, label="Vejtemp - Dugpunkt Delta (°C)", orientation='vertical', pad=0.02) 
 
 ax.set_xlim(LON_MIN, LON_MAX)
 ax.set_ylim(LAT_MIN, LAT_MAX)
-ax.set_title(f"IDW Risiko: Overlap (T_vej < {RISK_TEMP_THRESHOLD}°C OG Delta < {RISK_DELTA_THRESHOLD}°C)")
+ax.set_title(f"IDW Risiko (Farvet af T_vej): Overlap (T_vej < {RISK_TEMP_THRESHOLD}°C OG Delta < {RISK_DELTA_THRESHOLD}°C)")
 plt.savefig(PNG_RISK_MAP, dpi=200) # Gemmes uanset hvad
 plt.close()
 print(f"✔ Testbillede gemt: {PNG_RISK_MAP}")
