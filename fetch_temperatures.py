@@ -39,7 +39,6 @@ def fetch_all_dmi_dewpoints(parameter_id: str) -> pd.DataFrame:
     params = {
         "parameterId": parameter_id,
         "datetime": DMI_DATETIME_WINDOW,
-        "limit": 5000 # Henter et stort antal, da vi skal have alle stationer
     }
     
     try:
