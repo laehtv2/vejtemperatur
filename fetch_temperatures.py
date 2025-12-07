@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Henter vejtemperaturer fra Trafikkort og matcher med DMI dugpunkt via NÆRMESTE PUNKT.
-- Kræver at DMI har koordinater i deres output (hvilket MetObs endpoint gør).
+- Udvalgte stationer hentes nu via matchende STABILE koordinater fra ekstern CSV.
 """
 
 from __future__ import annotations
@@ -24,13 +24,11 @@ URL_VEJTEMP = "https://storage.googleapis.com/trafikkort-data/geojson/25832/temp
 DMI_BASE = "https://opendataapi.dmi.dk/v2/metObs/collections/observation/items"
 DMI_DATETIME_WINDOW = "now-PT60M/now" 
 
+# Navn på filen med de stabile koordinater
+STABLE_COORDS_FILE = "vejtemp_30_centralt_fordelte_stationer_STABIL.csv"
+
 # EPSG:25832 -> WGS84
 transformer = Transformer.from_crs("EPSG:25832", "EPSG:4326", always_xy=True)
-
-# VIGTIGT: Denne liste SKAL opdateres med de STABILE StationID'er (device_id),
-# som matcher de 30 bedst fordelte koordinater.
-# BEMÆRK: Disse ID'er er stadig eksempler og SKAL erstattes efter Trin 3.
-SELECTED_STATION_IDS = ['Vejtemp_523', 'Vejtemp_591', 'Vejtemp_609', 'Vejtemp_448', 'Vejtemp_402', 'Vejtemp_459', 'Vejtemp_224', 'Vejtemp_284', 'Vejtemp_235', 'Vejtemp_257', 'Vejtemp_383', 'Vejtemp_429', 'Vejtemp_308', 'Vejtemp_247', 'Vejtemp_643', 'Vejtemp_157', 'Vejtemp_147', 'Vejtemp_119', 'Vejtemp_135', 'Vejtemp_31', 'Vejtemp_200', 'Vejtemp_204', 'Vejtemp_152', 'Vejtemp_345', 'Vejtemp_192', 'Vejtemp_544', 'Vejtemp_525', 'Vejtemp_586', 'Vejtemp_216', 'Vejtemp_153']
 
 # ---------------------------
 # DMI HENTNING (Uændret)
@@ -100,29 +98,74 @@ def parse_features(geojson: dict) -> list[dict]:
         if coords and len(coords) >= 2:
             lon, lat = transformer.transform(coords[0], coords[1])
 
-        # VIGTIGT: device_id er den STABILE ID!
         station_id = props.get("device_id") 
 
         rows.append({
-            "ID": id_counter, # Til outputfil: Ustabilt, men nødvendigt for WSI Max
-            "NAME": str(id_counter), # Til outputfil: Ustabilt, men nødvendigt for WSI Max
+            "ID": id_counter, # Til outputfil: Ustabilt, men nødvendigt
+            "NAME": str(id_counter), # Til outputfil: Ustabilt, men nødvendigt
             "Latitude": lat, # Til outputfil
             "Longitude": lon, # Til outputfil
-            "StationID": str(station_id) if station_id is not None else f"Vejtemp_{id_counter}", # Den STABILE ID, der bruges internt til udvælgelse
+            "StationID": str(station_id) if station_id is not None else f"Vejtemp_{id_counter}", # Den STABILE ID
             "Vej_temp": props.get("roadSurfaceTemperature"),
             "Luft_temp": props.get("airTemperature"),
         })
         id_counter += 1
     return rows
 
-def pick_representative_points(df: pd.DataFrame) -> pd.DataFrame:
-    """ Bruger den faste liste SELECTED_STATION_IDS til at vælge repræsentative stationer (baseret på StationID). """
-    if not SELECTED_STATION_IDS:
-        print("\nADVARSEL: SELECTED_STATION_IDS er tom. Fortsæt til Trin 3 for at finde de stabile ID'er.")
-        return pd.DataFrame() 
+def pick_representative_points(df_api: pd.DataFrame) -> pd.DataFrame:
+    """ 
+    Udvælger repræsentative stationer ved at matche API-data mod
+    STABILE koordinater fra filen.
+    """
+    try:
+        # Læs den stabile koordinatfil
+        df_stable = pd.read_csv(STABLE_COORDS_FILE)
         
-    df_selected = df[df["StationID"].isin(map(str, SELECTED_STATION_IDS))].sort_values("StationID")
-    return df_selected
+        # Omdøb kolonner for at matche den stabile fil's struktur
+        df_stable.rename(columns={'STABLE_ID': 'StationID', 
+                                  'LATITUDE': 'Latitude_Stable', 
+                                  'LONGITUDE': 'Longitude_Stable'}, inplace=True)
+        
+    except FileNotFoundError:
+        print(f"\nFATAL FEJL: Kunne ikke finde den stabile koordinatfil '{STABLE_COORDS_FILE}'. Sørg for at den ligger i dit repo.")
+        return pd.DataFrame()
+
+    # 1. Konverter API-data (vejtemp) til GeoDataFrame
+    vejtemp_gdf = gpd.GeoDataFrame(
+        df_api.copy(), 
+        geometry=gpd.points_from_xy(df_api.Longitude, df_api.Latitude), 
+        crs="EPSG:4326"
+    )
+
+    # 2. Konverter de stabile referencekoordinater til GeoDataFrame
+    stable_gdf = gpd.GeoDataFrame(
+        df_stable.copy(), 
+        geometry=gpd.points_from_xy(df_stable.Longitude_Stable, df_stable.Latitude_Stable), 
+        crs="EPSG:4326"
+    )
+
+    # 3. Match Nærmeste Nabo (Stabil reference -> Vejtemp API)
+    # Find index i vejtemp_gdf (API data) af den nærmeste station for HVER stabil reference
+    nearest_api_idx = stable_gdf.geometry.apply(lambda stable_point: vejtemp_gdf.geometry.distance(stable_point).idxmin())
+
+    # 4. Filter for at sikre, at matchet er præcist (tolerance)
+    # Vi checker afstanden mellem det stabile punkt og det matchede punkt i API-dataen
+    min_distance = stable_gdf.geometry.apply(lambda stable_point: vejtemp_gdf.geometry.distance(stable_point).min())
+    
+    # Tolerance på 0.0001 grader (~10-15 meter) sikrer, at vi kun matcher de korrekte stationer
+    acceptable_matches = min_distance < 0.0001 
+
+    # 5. Udvælg de matchede rækker fra API-dataen
+    # Vi bruger kun de indices, hvor matchet var acceptabelt.
+    selected_indices = nearest_api_idx[acceptable_matches].unique()
+
+    df_selected = vejtemp_gdf.loc[selected_indices].copy()
+    
+    # Drop geometry column for final CSV output
+    if 'geometry' in df_selected.columns:
+        df_selected = df_selected.drop(columns=['geometry'])
+        
+    return df_selected.sort_values('StationID')
 
 
 def main():
@@ -179,10 +222,12 @@ def main():
     print(f"Gemte {len(df_1)} rækker i vej_temp_1.csv (Korrekt kolonneorden for WSI Max)")
     print(f"Gemte {len(df_2)} rækker i vej_temp_2.csv (Korrekt kolonneorden for WSI Max)")
 
+    # >>> HER BRUGES DEN NYE LOGIK <<<
     df_selected = pick_representative_points(df)
+    
     if not df_selected.empty:
         df_selected.to_csv("vejtemp_udvalgte.csv", index=False)
-        print(f"Gemte {len(df_selected)} rækker i vejtemp_udvalgte.csv (stabil udvælgelse via StationID)")
+        print(f"Gemte {len(df_selected)} rækker i vejtemp_udvalgte.csv (Stabil udvælgelse via koordinater)")
 
 
 if __name__ == "__main__":
