@@ -1,28 +1,26 @@
 #!/usr/bin/env python3
 """
-Genererer interpolerede KML-filer OG et test-billede
+Genererer KML med cirkler omkring observationer
+og et testbillede
 """
 
 import pandas as pd
 import numpy as np
-from scipy.interpolate import griddata
 import simplekml
 import matplotlib.pyplot as plt
+from shapely.geometry import Point
+import geopandas as gpd
 
 # ---------------------------
 # Parametre
 # ---------------------------
-GRID_SIZE = 300   # højere = glattere
-VEJTEMP_THRESHOLD = 6  # grader C
+CIRCLE_RADIUS_DEG = 0.03  # cirka 3 km radius
+VEJTEMP_THRESHOLD = 6
 
 COLOR_TEMP = "7f66ccff"
 COLOR_RISK_LOW = "7f66ccff"
 COLOR_RISK_MED = "7fff9966"
 COLOR_RISK_HIGH = "7f8b0000"
-
-# Bounding box over Danmark (kun land)
-LON_MIN, LON_MAX = 8.0, 12.7
-LAT_MIN, LAT_MAX = 54.5, 57.9
 
 # ---------------------------
 # Læs CSV
@@ -37,70 +35,56 @@ vejtemp = df["Vej_temp"].to_numpy()
 dugpunkt = df["Luft_temp"].to_numpy()
 
 # ---------------------------
-# Opret grid kun over Danmark
+# Læs Danmark-geojson til maske
 # ---------------------------
-grid_lon = np.linspace(LON_MIN, LON_MAX, GRID_SIZE)
-grid_lat = np.linspace(LAT_MIN, LAT_MAX, GRID_SIZE)
-grid_lon, grid_lat = np.meshgrid(grid_lon, grid_lat)
+dk_shape = gpd.read_file("denmark_land.geojson")  # Danmark landpolygon
 
-# Interpoler vejtemperatur
-grid_vejtemp = griddata(points=(lons, lats), values=vejtemp,
-                        xi=(grid_lon, grid_lat), method="linear")
-
-# Interpoler dugpunkt
-grid_dug = griddata(points=(lons, lats), values=dugpunkt,
-                    xi=(grid_lon, grid_lat), method="linear")
+def is_in_denmark(lon, lat):
+    point = Point(lon, lat)
+    return dk_shape.contains(point).any()
 
 # ---------------------------
 # Gem testbillede
 # ---------------------------
 plt.figure(figsize=(8,10))
-plt.imshow(grid_vejtemp, origin='lower',
-           extent=(LON_MIN, LON_MAX, LAT_MIN, LAT_MAX),
-           cmap='Blues', vmin=0, vmax=VEJTEMP_THRESHOLD)
+plt.scatter(lons, lats, c=vejtemp, cmap="Blues", s=200, alpha=0.6)
 plt.colorbar(label="Vejtemperatur (°C)")
-plt.scatter(lons, lats, c='red', s=10, alpha=0.5)
-plt.title("Interpoleret vejtemperatur over Danmark")
+plt.title("Vejtemperatur observationer")
 plt.savefig("test_vejtemp.png", dpi=200)
 plt.close()
 print("✔ Testbillede gemt: test_vejtemp.png")
 
 # ---------------------------
-# Funktion til KML polygoner
+# Funktion til at tegne cirkler i KML
 # ---------------------------
-def create_polygons_from_grid(kml_obj, grid_vals, grid_lon, grid_lat, color_func, threshold_func):
-    rows, cols = grid_vals.shape
-    for i in range(rows - 1):
-        for j in range(cols - 1):
-            val = grid_vals[i, j]
-            if np.isnan(val):
-                continue
-            if not threshold_func(val):
-                continue
-            coords = [
-                (grid_lon[i,j], grid_lat[i,j]),
-                (grid_lon[i,j+1], grid_lat[i,j+1]),
-                (grid_lon[i+1,j+1], grid_lat[i+1,j+1]),
-                (grid_lon[i+1,j], grid_lat[i+1,j]),
-                (grid_lon[i,j], grid_lat[i,j])
-            ]
-            pol = kml_obj.newpolygon()
-            pol.outerboundaryis.coords = coords
-            pol.style.polystyle.color = color_func(val)
-            pol.style.polystyle.fill = 1
-            pol.style.polystyle.outline = 0
+def add_circles_to_kml(kml_obj, lons, lats, values, radius_deg, color_func, mask_func=None):
+    for lon, lat, val in zip(lons, lats, values):
+        if mask_func is not None and not mask_func(lon, lat):
+            continue
+        if np.isnan(val):
+            continue
+        pol = kml_obj.newpolygon()
+        # Cirkel som polygon med 20 punkter
+        circle_coords = [
+            (lon + radius_deg*np.cos(theta), lat + radius_deg*np.sin(theta))
+            for theta in np.linspace(0, 2*np.pi, 20)
+        ]
+        circle_coords.append(circle_coords[0])
+        pol.outerboundaryis.coords = circle_coords
+        pol.style.polystyle.color = color_func(val)
+        pol.style.polystyle.fill = 1
+        pol.style.polystyle.outline = 0
 
 # ---------------------------
 # KML: Vejtemperatur
 # ---------------------------
 kml_temp = simplekml.Kml()
-create_polygons_from_grid(
+add_circles_to_kml(
     kml_temp,
-    grid_vals=grid_vejtemp,
-    grid_lon=grid_lon,
-    grid_lat=grid_lat,
-    color_func=lambda val: COLOR_TEMP,
-    threshold_func=lambda val: val < VEJTEMP_THRESHOLD
+    lons, lats, vejtemp,
+    radius_deg=CIRCLE_RADIUS_DEG,
+    color_func=lambda val: COLOR_TEMP if val < VEJTEMP_THRESHOLD else COLOR_RISK_LOW,
+    mask_func=is_in_denmark
 )
 kml_temp.save("vejtemp_only.kml")
 print("✔ KML gemt: vejtemp_only.kml")
@@ -109,25 +93,19 @@ print("✔ KML gemt: vejtemp_only.kml")
 # KML: Risiko for glatføre
 # ---------------------------
 kml_risk = simplekml.Kml()
-grid_risk = np.full_like(grid_vejtemp, np.nan)
+risk_vals = []
+for t, dew in zip(vejtemp, dugpunkt):
+    if np.isnan(t) or np.isnan(dew) or t >= 0:
+        risk_vals.append(np.nan)
+    else:
+        risk_vals.append(t - dew)
 
-for i in range(GRID_SIZE):
-    for j in range(GRID_SIZE):
-        t = grid_vejtemp[i,j]
-        dew = grid_dug[i,j]
-        if np.isnan(t) or np.isnan(dew):
-            continue
-        if t >= 0:
-            continue
-        grid_risk[i,j] = t - dew
-
-create_polygons_from_grid(
+add_circles_to_kml(
     kml_risk,
-    grid_vals=grid_risk,
-    grid_lon=grid_lon,
-    grid_lat=grid_lat,
+    lons, lats, risk_vals,
+    radius_deg=CIRCLE_RADIUS_DEG,
     color_func=lambda delta: COLOR_RISK_HIGH if delta < 0 else (COLOR_RISK_MED if delta < 1 else COLOR_RISK_LOW),
-    threshold_func=lambda delta: not np.isnan(delta)
+    mask_func=is_in_denmark
 )
 kml_risk.save("vejtemp_dugpunkt.kml")
 print("✔ KML gemt: vejtemp_dugpunkt.kml")
