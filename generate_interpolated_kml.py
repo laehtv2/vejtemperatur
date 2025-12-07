@@ -22,11 +22,11 @@ import matplotlib.colors as colors
 # ---------------------------
 # Parametre
 # ---------------------------
-VEJTEMP_THRESHOLD = 7.0           # Tærskel for farveskala (lyseblå ved 7.0)
-MIN_TEMP_COLOR = 7.0              # Start for farveskalaen
-MAX_TEMP_COLOR = -3.0             # Slut for farveskalaen (mørkeblå ved -3.0)
+VEJTEMP_THRESHOLD = 0.0           # Tærskel for farveskala (lyseblå)
+MIN_TEMP_COLOR = 0.0              # Start for farveskalaen
+MAX_TEMP_COLOR = -10.0             # Slut for farveskalaen (mørkeblå)
 
-RISK_TEMP_THRESHOLD = 7.0         # Vejtemp skal være under 0°C for at have risiko
+RISK_TEMP_THRESHOLD = 0.0         # Vejtemp skal være under 0°C for at have risiko
 RISK_DELTA_THRESHOLD = 0.0        # Delta (T_vej - T_dug) skal være under 0°C for at have risiko
 
 GRID_RESOLUTION = 200             
