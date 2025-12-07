@@ -53,10 +53,11 @@ def parse_features(geojson: dict) -> list[dict]:
 def pick_representative_points(df: pd.DataFrame, k: int = 45, seed: int = 42) -> pd.DataFrame:
     """
     Udvælg k punkter fordelt over Danmark vha. k-means clustering.
-    Vi finder cluster-centroid, og vælger det punkt der ligger tættest på centret.
-    Brug en fast random_state for at få samme 45 punkter hver gang.
+    Sørger for at det samme sæt vælges hver gang.
     """
-    coords = df[["Latitude", "Longitude"]].to_numpy()
+    # Sortér altid på ID først
+    df_sorted = df.sort_values("ID").reset_index(drop=True)
+    coords = df_sorted[["Latitude", "Longitude"]].to_numpy()
 
     # KMeans clustering med fast seed
     kmeans = KMeans(n_clusters=k, random_state=seed, n_init="auto")
@@ -67,7 +68,7 @@ def pick_representative_points(df: pd.DataFrame, k: int = 45, seed: int = 42) ->
 
     for i in range(k):
         cluster_points = coords[labels == i]
-        cluster_indices = df.index[labels == i]
+        cluster_indices = df_sorted.index[labels == i]
 
         if len(cluster_points) == 0:
             continue
@@ -79,7 +80,8 @@ def pick_representative_points(df: pd.DataFrame, k: int = 45, seed: int = 42) ->
         selected_indices.append(nearest_idx)
 
     # sorter efter ID så rækkefølgen bliver stabil
-    return df.loc[selected_indices].sort_values("ID")
+    return df_sorted.loc[selected_indices].sort_values("ID")
+
 
 def main():
     geojson = fetch_geojson(URL)
