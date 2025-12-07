@@ -28,9 +28,9 @@ import matplotlib.colors as colors
 # ---------------------------
 # Parametre
 # ---------------------------
-VEJTEMP_THRESHOLD = 0.0           # Tærskel for "kold" vejtemp (°C) - vi farver under denne.
-MIN_TEMP_COLOR = 0.0              # Temperatur for den lyseste farve (lyseblå)
-MAX_TEMP_COLOR = -10.0            # Temperatur for den mørkeste farve (mørkeblå)
+VEJTEMP_THRESHOLD = 7.0           # Tærskel for "kold" vejtemp (°C) - vi farver under denne.   0
+MIN_TEMP_COLOR = 7.0              # Temperatur for den lyseste farve (lyseblå)                 0
+MAX_TEMP_COLOR = -3.0            # Temperatur for den mørkeste farve (mørkeblå)             -10
 
 GRID_RESOLUTION = 200             # Opløsning af interpolationsgrid (f.eks. 200x200)
 IDW_POWER = 2                     # Inverse Distance Weighting Power (typisk 2)
