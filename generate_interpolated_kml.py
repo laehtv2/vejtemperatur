@@ -309,12 +309,12 @@ gpd.GeoSeries([den_wgs]).plot(ax=ax, color="lightgray", edgecolor="k")
 # Hvis der er data at plotte (Konturfyld)
 if not np.all(np.isnan(Z_temp)):
     levels = np.linspace(MAX_TEMP_COLOR, MIN_TEMP_COLOR, 11)
-    cp = ax.contourf(X_wgs, Y_wgs, Z_temp, levels=levels, cmap='YlGnBu_r', extend='min', alpha=0.7, zorder=2)
+    cp = ax.contourf(X_wgs, Y_wgs, Z_temp, levels=levels, cmap='Blues_r', extend='min', alpha=0.7, zorder=2)
     ax.contour(X_wgs, Y_wgs, Z_temp, levels=levels, colors='k', linewidths=0.2, alpha=0.5, zorder=3)
     plt.colorbar(cp, ax=ax, label="Interpoleret Vejtemperatur (°C)", orientation='vertical', pad=0.02)
     
 # Brug lons_valid og vejtemp_valid, da de har Dewpoint data
-sc_temp = ax.scatter(lons_valid, lats_valid, c=vejtemp_valid, cmap="RdYlBu_r", s=40, edgecolor='k', zorder=5) 
+sc_temp = ax.scatter(lons_valid, lats_valid, c=vejtemp_valid, cmap="Reds", s=40, edgecolor='k', zorder=5) 
 ax.set_xlim(LON_MIN, LON_MAX)
 ax.set_ylim(LAT_MIN, LAT_MAX)
 ax.set_title(f"IDW Interpolation: Vejtemperatur {MIN_TEMP_COLOR}°C til {MAX_TEMP_COLOR}°C")
@@ -336,7 +336,7 @@ if np.sum(final_risk_mask) > 0:
     Z_risk_temp_masked[~final_risk_mask.reshape((GRID_RESOLUTION, GRID_RESOLUTION))] = np.nan # Maskerer ud områder uden risiko
 
     levels = np.linspace(MAX_TEMP_COLOR, MIN_TEMP_COLOR, 11) # Samme farveskala som T_vej
-    cp = ax.contourf(X_wgs, Y_wgs, Z_risk_temp_masked, levels=levels, cmap='YlGnBu_r', extend='min', alpha=0.7, zorder=2)
+    cp = ax.contourf(X_wgs, Y_wgs, Z_risk_temp_masked, levels=levels, cmap='Blues_r', extend='min', alpha=0.7, zorder=2)
     
     # Farvebjælke skal vises (den repræsenterer temperaturen i risiko-områderne)
     plt.colorbar(cp, ax=ax, label="Temperatur i Risiko Områder (°C)", orientation='vertical', pad=0.02) 
