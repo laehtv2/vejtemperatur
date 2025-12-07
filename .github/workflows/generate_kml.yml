@@ -20,7 +20,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install numpy pandas matplotlib shapely geopandas pyproj lxml simplekml
+          pip install numpy pandas matplotlib shapely geopandas pyproj lxml simplekml scipy
 
       - name: Run vejtemp script
         run: |
