@@ -25,7 +25,7 @@ import matplotlib.pyplot as plt
 # ---------------------------
 # Parametre
 # ---------------------------
-VEJTEMP_THRESHOLD = 6           # nemt at ændre senere (fx 0)
+VEJTEMP_THRESHOLD = 8           # nemt at ændre senere (fx 0)
 BUFFER_M = 10000                # 10 km buffer (meter)
 N_VOR_POLY_VERTS = 100          # bruges i finite polygon konstruktion (ikke kritisk)
 
