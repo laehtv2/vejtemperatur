@@ -4,7 +4,7 @@ Henter vejtemperaturer fra Trafikkort.
 Outputter 3 filer:
 1. vej_temp_1.csv (Station 1-500)
 2. vej_temp_2.csv (Station 500-slut)
-3. vejtemp_udvalgte.csv (30 udvalgte faste punkter med data fra nærmeste nabo)
+3. vejtemp_30_stabil.csv (30 faste punkter -> Viser LAVESTE temp fra de 5 nærmeste målere)
 """
 
 from __future__ import annotations
@@ -23,6 +23,9 @@ import io
 URL_VEJTEMP = "https://storage.googleapis.com/trafikkort-data/geojson/25832/temperatures.point.json"
 DMI_BASE = "https://opendataapi.dmi.dk/v2/metObs/collections/observation/items"
 DMI_DATETIME_WINDOW = "now-PT60M/now"
+
+# Hvor mange nabo-stationer skal vi tjekke for at finde den koldeste?
+SEARCH_NEIGHBORS = 5 
 
 # EPSG:25832 -> WGS84
 transformer = Transformer.from_crs("EPSG:25832", "EPSG:4326", always_xy=True)
@@ -109,7 +112,6 @@ def fetch_and_parse_vejtemp() -> pd.DataFrame:
         if coords and len(coords) >= 2:
             lon, lat = transformer.transform(coords[0], coords[1])
 
-        # Gem både som 'Latitude' (til output) og 'Live_Lat' (til beregning)
         rows.append({
             "ID": id_counter,
             "NAME": str(id_counter),
@@ -120,10 +122,15 @@ def fetch_and_parse_vejtemp() -> pd.DataFrame:
             "Luft_temp": props.get("airTemperature"),
         })
         id_counter += 1
-    return pd.DataFrame(rows)
+    
+    # Konverter til tal og håndter manglende data
+    df = pd.DataFrame(rows)
+    df["Vej_temp"] = pd.to_numeric(df["Vej_temp"], errors='coerce')
+    df["Luft_temp"] = pd.to_numeric(df["Luft_temp"], errors='coerce')
+    return df
 
 # ---------------------------
-# MATCHING LOGIK (30 STABILE)
+# NY MATCHING LOGIK (FIND KOLDESTE I OMRÅDET)
 # ---------------------------
 def create_stable_dataset(df_live: pd.DataFrame) -> pd.DataFrame:
     df_stable = pd.read_csv(io.StringIO(STABLE_STATIONS_CSV))
@@ -133,18 +140,47 @@ def create_stable_dataset(df_live: pd.DataFrame) -> pd.DataFrame:
         df_stable["Luft_temp"] = np.nan
         return df_stable
 
+    # Fjern rækker hvor Vej_temp er NaN, da vi ikke kan bruge dem til at finde minimum
+    df_live_valid = df_live.dropna(subset=["Vej_temp"]).copy()
+    
+    if df_live_valid.empty:
+        print("Advarsel: Ingen gyldige vejtemperaturer fundet.")
+        return df_stable
+
     stable_coords = df_stable[['Latitude', 'Longitude']].values
-    live_coords = df_live[['Latitude', 'Longitude']].values
+    live_coords = df_live_valid[['Latitude', 'Longitude']].values
 
-    # Find nærmeste nabo
+    # 1. Beregn afstande fra alle faste punkter til alle live punkter
     distances = cdist(stable_coords, live_coords, metric='euclidean')
-    nearest_indices = np.argmin(distances, axis=1)
+    
+    vej_temps = []
+    luft_temps = []
 
-    # Hent data fra de fundne live-indekser
-    matched_data = df_live.iloc[nearest_indices].reset_index(drop=True)
+    # 2. Loop gennem hver fast station
+    for i in range(len(df_stable)):
+        # Hent distancer for denne station
+        row_dists = distances[i]
+        
+        # Find indexene på de N nærmeste stationer (f.eks. 5 tætteste)
+        # np.argsort returnerer index sorteret fra lavest til højest distance
+        closest_indices = np.argsort(row_dists)[:SEARCH_NEIGHBORS]
+        
+        # Udvælg disse rækker fra live data
+        candidate_rows = df_live_valid.iloc[closest_indices]
+        
+        # 3. Find rækken med den LAVESTE vejtemperatur blandt kandidaterne
+        coldest_idx = candidate_rows["Vej_temp"].idxmin()
+        coldest_row = candidate_rows.loc[coldest_idx]
+        
+        # Gem værdierne
+        vej_temps.append(coldest_row["Vej_temp"])
+        
+        # Vi tager lufttemperaturen fra SAMME station som havde den laveste vejtemp,
+        # for at data hænger sammen fysisk.
+        luft_temps.append(coldest_row["Luft_temp"])
 
-    df_stable["Vej_temp"] = matched_data["Vej_temp"]
-    df_stable["Luft_temp"] = matched_data["Luft_temp"]
+    df_stable["Vej_temp"] = vej_temps
+    df_stable["Luft_temp"] = luft_temps
     
     # Sørg for ID og StationID format
     df_stable["StationID"] = "Vejtemp_" + df_stable["ID"].astype(str)
@@ -191,7 +227,9 @@ def main():
     
     # Gem raw data split (WSI Max format)
     cols = ["ID", "NAME", "Latitude", "Longitude", "StationID", "Vej_temp", "Luft_temp", "Dewpoint"]
-    df_out = df[cols] # Sorter kolonner
+    # Sørg for at kun eksisterende kolonner vælges (hvis dugpunkt fejlede totalt)
+    valid_cols = [c for c in cols if c in df.columns]
+    df_out = df[valid_cols] 
     
     df_1 = df_out.iloc[:500].copy()
     df_2 = df_out.iloc[500:].copy()
@@ -202,14 +240,15 @@ def main():
     print(f"-> Gemte 'vej_temp_2.csv' ({len(df_2)} rækker)")
 
     # 4. Behandl DE 30 STABILE STATIONER
-    print("Behandler 30 stabile stationer (Nærmeste nabo)...")
-    df_stable = create_stable_dataset(df) # Matcher vej-data
+    print(f"Behandler 30 stabile stationer (Finder laveste temp blandt {SEARCH_NEIGHBORS} naboer)...")
+    df_stable = create_stable_dataset(df) # Matcher vej-data (Worst-case)
     df_stable = add_dewpoint(df_stable)   # Matcher DMI-data til de faste punkter
     
     # Gem stabil fil
-    df_stable_out = df_stable[cols]
-    df_stable_out.to_csv("vejtemp_udvalgte.csv", index=False)
-    print(f"-> Gemte 'vejtemp_udvalgte.csv' ({len(df_stable_out)} rækker)")
+    valid_cols_stable = [c for c in cols if c in df_stable.columns]
+    df_stable_out = df_stable[valid_cols_stable]
+    df_stable_out.to_csv("vejtemp_30_stabil.csv", index=False)
+    print(f"-> Gemte 'vejtemp_30_stabil.csv' ({len(df_stable_out)} rækker)")
     print("--- Færdig ---")
 
 if __name__ == "__main__":
