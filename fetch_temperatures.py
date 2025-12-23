@@ -4,7 +4,7 @@ Henter vejtemperaturer fra Trafikkort.
 Outputter 3 filer:
 1. vej_temp_1.csv (Station 1-500)
 2. vej_temp_2.csv (Station 500-slut)
-3. vejtemp_30_stabil.csv (30 faste punkter -> Viser LAVESTE temp fra de 5 nærmeste målere)
+3. vejtemp_udvalgte.csv (30 faste punkter -> Viser LAVESTE temp fra de 5 nærmeste målere)
 """
 
 from __future__ import annotations
@@ -236,8 +236,7 @@ def main():
     
     df_1.to_csv("vej_temp_1.csv", index=False)
     df_2.to_csv("vej_temp_2.csv", index=False)
-    print(f"-> Gemte 'vej_temp_1.csv' ({len(df_1)} rækker)")
-    print(f"-> Gemte 'vej_temp_2.csv' ({len(df_2)} rækker)")
+
 
     # 4. Behandl DE 30 STABILE STATIONER
     print(f"Behandler 30 stabile stationer (Finder laveste temp blandt {SEARCH_NEIGHBORS} naboer)...")
@@ -247,9 +246,7 @@ def main():
     # Gem stabil fil
     valid_cols_stable = [c for c in cols if c in df_stable.columns]
     df_stable_out = df_stable[valid_cols_stable]
-    df_stable_out.to_csv("vejtemp_30_stabil.csv", index=False)
-    print(f"-> Gemte 'vejtemp_30_stabil.csv' ({len(df_stable_out)} rækker)")
-    print("--- Færdig ---")
+    df_stable_out.to_csv("vejtemp_udvalgte.csv", index=False)
 
 if __name__ == "__main__":
     main()
