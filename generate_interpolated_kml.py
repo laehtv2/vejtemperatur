@@ -25,7 +25,7 @@ import matplotlib.colors as colors
 # ---------------------------
 VEJTEMP_THRESHOLD = 0.0           # Tærskel for farveskala (lyseblå)
 MIN_TEMP_COLOR = 0.0              # Start for farveskalaen
-MAX_TEMP_COLOR = -6.0             # Slut for farveskalaen (mørkeblå)
+MAX_TEMP_COLOR = -8.0             # Slut for farveskalaen (mørkeblå)
 
 # Sættes til 0.1 for at fange "0 grader" præcist trods sensor-støj
 RISK_TEMP_THRESHOLD = 0.1         # Vejtemp skal være under 0.1°C for at have risiko
