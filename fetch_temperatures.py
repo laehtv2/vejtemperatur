@@ -5,6 +5,8 @@ Outputter 3 filer:
 1. vej_temp_1.csv (Station 1-500)
 2. vej_temp_2.csv (Station 500-slut)
 3. vejtemp_udvalgte.csv (30 faste punkter -> Viser LAVESTE temp fra de 5 nærmeste målere)
+
+Opdatering: Tilføjer '°' symbol til temperaturværdierne i outputtet.
 """
 
 from __future__ import annotations
@@ -140,7 +142,7 @@ def create_stable_dataset(df_live: pd.DataFrame) -> pd.DataFrame:
         df_stable["Luft_temp"] = np.nan
         return df_stable
 
-    # Fjern rækker hvor Vej_temp er NaN, da vi ikke kan bruge dem til at finde minimum
+    # Fjern rækker hvor Vej_temp er NaN
     df_live_valid = df_live.dropna(subset=["Vej_temp"]).copy()
     
     if df_live_valid.empty:
@@ -150,7 +152,7 @@ def create_stable_dataset(df_live: pd.DataFrame) -> pd.DataFrame:
     stable_coords = df_stable[['Latitude', 'Longitude']].values
     live_coords = df_live_valid[['Latitude', 'Longitude']].values
 
-    # 1. Beregn afstande fra alle faste punkter til alle live punkter
+    # 1. Beregn afstande
     distances = cdist(stable_coords, live_coords, metric='euclidean')
     
     vej_temps = []
@@ -158,31 +160,25 @@ def create_stable_dataset(df_live: pd.DataFrame) -> pd.DataFrame:
 
     # 2. Loop gennem hver fast station
     for i in range(len(df_stable)):
-        # Hent distancer for denne station
         row_dists = distances[i]
         
-        # Find indexene på de N nærmeste stationer (f.eks. 5 tætteste)
-        # np.argsort returnerer index sorteret fra lavest til højest distance
+        # Find indexene på de N nærmeste stationer
         closest_indices = np.argsort(row_dists)[:SEARCH_NEIGHBORS]
         
-        # Udvælg disse rækker fra live data
+        # Udvælg disse rækker
         candidate_rows = df_live_valid.iloc[closest_indices]
         
-        # 3. Find rækken med den LAVESTE vejtemperatur blandt kandidaterne
+        # 3. Find rækken med den LAVESTE vejtemperatur
         coldest_idx = candidate_rows["Vej_temp"].idxmin()
         coldest_row = candidate_rows.loc[coldest_idx]
         
         # Gem værdierne
         vej_temps.append(coldest_row["Vej_temp"])
-        
-        # Vi tager lufttemperaturen fra SAMME station som havde den laveste vejtemp,
-        # for at data hænger sammen fysisk.
         luft_temps.append(coldest_row["Luft_temp"])
 
     df_stable["Vej_temp"] = vej_temps
     df_stable["Luft_temp"] = luft_temps
     
-    # Sørg for ID og StationID format
     df_stable["StationID"] = "Vejtemp_" + df_stable["ID"].astype(str)
     
     return df_stable
@@ -208,34 +204,44 @@ def main():
             target_df["Dewpoint"] = target_df["Luft_temp"] # Fallback
             return target_df
         
-        # Lav GeoDataFrame til matching
         gdf = gpd.GeoDataFrame(
             target_df, 
             geometry=gpd.points_from_xy(target_df.Longitude, target_df.Latitude),
             crs="EPSG:4326"
         )
-        # Find nærmeste DMI måling
         nearest_vals = gdf.geometry.apply(
             lambda g: dmi_gdf.loc[dmi_gdf.geometry.distance(g).idxmin(), "Dewpoint"]
         )
         target_df["Dewpoint"] = nearest_vals.values
+        return target_df
+        
+    # Hjælpefunktion til formatering (Tilføj °)
+    def format_temperatures(target_df, cols):
+        for c in cols:
+            if c in target_df.columns:
+                # Konverter til string og tilføj gradtegn, hvis værdien ikke er tom
+                target_df[c] = target_df[c].apply(lambda x: f"{x}°" if pd.notnull(x) else "")
         return target_df
 
     # 3. Behandl DE STORE FILER (Alle data)
     print(f"Behandler {len(df)} rå målinger...")
     df = add_dewpoint(df) # Tilføj dugpunkt til alle
     
-    # Gem raw data split (WSI Max format)
     cols = ["ID", "NAME", "Latitude", "Longitude", "StationID", "Vej_temp", "Luft_temp", "Dewpoint"]
-    # Sørg for at kun eksisterende kolonner vælges (hvis dugpunkt fejlede totalt)
     valid_cols = [c for c in cols if c in df.columns]
-    df_out = df[valid_cols] 
+    
+    # Kopier data til output dataframe
+    df_out = df[valid_cols].copy()
+    
+    # >>> HER FORMATERER VI DE STORE FILER <<<
+    df_out = format_temperatures(df_out, ["Vej_temp", "Luft_temp", "Dewpoint"])
     
     df_1 = df_out.iloc[:500].copy()
     df_2 = df_out.iloc[500:].copy()
     
     df_1.to_csv("vej_temp_1.csv", index=False)
     df_2.to_csv("vej_temp_2.csv", index=False)
+    print("Gemte vej_temp_1.csv og vej_temp_2.csv med gradtegn.")
 
 
     # 4. Behandl DE 30 STABILE STATIONER
@@ -243,10 +249,15 @@ def main():
     df_stable = create_stable_dataset(df) # Matcher vej-data (Worst-case)
     df_stable = add_dewpoint(df_stable)   # Matcher DMI-data til de faste punkter
     
-    # Gem stabil fil
+    # Klargør stabil output
     valid_cols_stable = [c for c in cols if c in df_stable.columns]
-    df_stable_out = df_stable[valid_cols_stable]
+    df_stable_out = df_stable[valid_cols_stable].copy()
+    
+    # >>> HER FORMATERER VI DEN LILLE FIL <<<
+    df_stable_out = format_temperatures(df_stable_out, ["Vej_temp", "Luft_temp", "Dewpoint"])
+    
     df_stable_out.to_csv("vejtemp_udvalgte.csv", index=False)
+    print("Gemte vejtemp_udvalgte.csv med gradtegn.")
 
 if __name__ == "__main__":
     main()
