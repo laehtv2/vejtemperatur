@@ -11,7 +11,7 @@
         </Style>
         <Style id="26">
             <PolyStyle id="27">
-                <color>fffcf6ef</color>
+                <color>fffcf5ef</color>
                 <colorMode>normal</colorMode>
                 <fill>1</fill>
                 <outline>0</outline>
@@ -19,7 +19,7 @@
         </Style>
         <Style id="32">
             <PolyStyle id="33">
-                <color>fffdf7f1</color>
+                <color>fffcf6f0</color>
                 <colorMode>normal</colorMode>
                 <fill>1</fill>
                 <outline>0</outline>
@@ -27,6 +27,14 @@
         </Style>
         <Style id="38">
             <PolyStyle id="39">
+                <color>fffffbf7</color>
+                <colorMode>normal</colorMode>
+                <fill>1</fill>
+                <outline>0</outline>
+            </PolyStyle>
+        </Style>
+        <Style id="44">
+            <PolyStyle id="45">
                 <color>fffffbf7</color>
                 <colorMode>normal</colorMode>
                 <fill>1</fill>
@@ -68,6 +76,16 @@
             <Polygon id="34">
                 <outerBoundaryIs>
                     <LinearRing id="36">
+                        <coordinates>10.374371859296481,57.29054862237229,0.0 10.374371859296481,57.30715478274308,0.0 10.412060301507536,57.30715478274308,0.0 10.412060301507536,57.29054862237229,0.0 10.374371859296481,57.29054862237229,0.0</coordinates>
+                    </LinearRing>
+                </outerBoundaryIs>
+            </Polygon>
+        </Placemark>
+        <Placemark id="41">
+            <styleUrl>#44</styleUrl>
+            <Polygon id="40">
+                <outerBoundaryIs>
+                    <LinearRing id="42">
                         <coordinates>10.261306532663314,57.50584461378132,0.0 10.261306532663314,57.52235348591027,0.0 10.29899497487437,57.52235348591027,0.0 10.29899497487437,57.50584461378132,0.0 10.261306532663314,57.50584461378132,0.0</coordinates>
                     </LinearRing>
                 </outerBoundaryIs>
