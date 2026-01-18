@@ -49,6 +49,14 @@
                 <outline>0</outline>
             </PolyStyle>
         </Style>
+        <Style id="44">
+            <PolyStyle id="45">
+                <color>fffffbf7</color>
+                <colorMode>normal</colorMode>
+                <fill>1</fill>
+                <outline>0</outline>
+            </PolyStyle>
+        </Style>
         <Placemark id="5">
             <styleUrl>#8</styleUrl>
             <Polygon id="4">
@@ -94,7 +102,7 @@
             <Polygon id="28">
                 <outerBoundaryIs>
                     <LinearRing id="30">
-                        <coordinates>14.89698492462311,55.225291078380735,0.0 14.89698492462311,55.22954474575177,0.0 14.906211944445793,55.225291078380735,0.0 14.89698492462311,55.225291078380735,0.0</coordinates>
+                        <coordinates>14.934673366834167,55.119964934234694,0.0 14.934673366834167,55.13753862082318,0.0 14.972361809045221,55.13753862082318,0.0 14.972361809045221,55.119964934234694,0.0 14.934673366834167,55.119964934234694,0.0</coordinates>
                     </LinearRing>
                 </outerBoundaryIs>
             </Polygon>
@@ -104,6 +112,16 @@
             <Polygon id="34">
                 <outerBoundaryIs>
                     <LinearRing id="36">
+                        <coordinates>14.89698492462311,55.225291078380735,0.0 14.89698492462311,55.22954474575177,0.0 14.906211944445793,55.225291078380735,0.0 14.89698492462311,55.225291078380735,0.0</coordinates>
+                    </LinearRing>
+                </outerBoundaryIs>
+            </Polygon>
+        </Placemark>
+        <Placemark id="41">
+            <styleUrl>#44</styleUrl>
+            <Polygon id="40">
+                <outerBoundaryIs>
+                    <LinearRing id="42">
                         <coordinates>14.74623115577889,55.260337972375574,0.0 14.74623115577889,55.27784983591849,0.0 14.783919597989946,55.27784983591849,0.0 14.783919597989946,55.260337972375574,0.0 14.74623115577889,55.260337972375574,0.0</coordinates>
                     </LinearRing>
                 </outerBoundaryIs>
