@@ -3,7 +3,7 @@
     <Document id="1">
         <Style id="6">
             <PolyStyle id="7">
-                <color>fffcf5ef</color>
+                <color>fffcf5ee</color>
                 <colorMode>normal</colorMode>
                 <fill>1</fill>
                 <outline>0</outline>
@@ -51,7 +51,7 @@
         </Style>
         <Style id="42">
             <PolyStyle id="43">
-                <color>fffdf7f1</color>
+                <color>fffcf6f0</color>
                 <colorMode>normal</colorMode>
                 <fill>1</fill>
                 <outline>0</outline>
@@ -115,7 +115,7 @@
         </Style>
         <Style id="90">
             <PolyStyle id="91">
-                <color>fff9efe4</color>
+                <color>fff8eee4</color>
                 <colorMode>normal</colorMode>
                 <fill>1</fill>
                 <outline>0</outline>
@@ -155,7 +155,7 @@
         </Style>
         <Style id="120">
             <PolyStyle id="121">
-                <color>fffcf5ef</color>
+                <color>fffcf5ee</color>
                 <colorMode>normal</colorMode>
                 <fill>1</fill>
                 <outline>0</outline>
@@ -219,7 +219,7 @@
         </Style>
         <Style id="168">
             <PolyStyle id="169">
-                <color>fffcf5ee</color>
+                <color>fffbf4ed</color>
                 <colorMode>normal</colorMode>
                 <fill>1</fill>
                 <outline>0</outline>
@@ -259,7 +259,7 @@
         </Style>
         <Style id="198">
             <PolyStyle id="199">
-                <color>fffffbf7</color>
+                <color>fffefaf6</color>
                 <colorMode>normal</colorMode>
                 <fill>1</fill>
                 <outline>0</outline>
@@ -299,7 +299,7 @@
         </Style>
         <Style id="228">
             <PolyStyle id="229">
-                <color>fffef9f5</color>
+                <color>fffef9f4</color>
                 <colorMode>normal</colorMode>
                 <fill>1</fill>
                 <outline>0</outline>
@@ -339,7 +339,7 @@
         </Style>
         <Style id="258">
             <PolyStyle id="259">
-                <color>fffef9f5</color>
+                <color>fffef9f4</color>
                 <colorMode>normal</colorMode>
                 <fill>1</fill>
                 <outline>0</outline>
@@ -379,7 +379,7 @@
         </Style>
         <Style id="288">
             <PolyStyle id="289">
-                <color>fffef9f5</color>
+                <color>fffef9f4</color>
                 <colorMode>normal</colorMode>
                 <fill>1</fill>
                 <outline>0</outline>
@@ -395,7 +395,7 @@
         </Style>
         <Style id="300">
             <PolyStyle id="301">
-                <color>fffcf6ef</color>
+                <color>fffcf5ef</color>
                 <colorMode>normal</colorMode>
                 <fill>1</fill>
                 <outline>0</outline>
@@ -475,7 +475,7 @@
         </Style>
         <Style id="360">
             <PolyStyle id="361">
-                <color>fff8ede1</color>
+                <color>fff7ece1</color>
                 <colorMode>normal</colorMode>
                 <fill>1</fill>
                 <outline>0</outline>
@@ -491,7 +491,7 @@
         </Style>
         <Style id="372">
             <PolyStyle id="373">
-                <color>fff9f0e6</color>
+                <color>fff9efe5</color>
                 <colorMode>normal</colorMode>
                 <fill>1</fill>
                 <outline>0</outline>
@@ -508,6 +508,22 @@
         <Style id="384">
             <PolyStyle id="385">
                 <color>fffbf4ed</color>
+                <colorMode>normal</colorMode>
+                <fill>1</fill>
+                <outline>0</outline>
+            </PolyStyle>
+        </Style>
+        <Style id="390">
+            <PolyStyle id="391">
+                <color>fff9f0e7</color>
+                <colorMode>normal</colorMode>
+                <fill>1</fill>
+                <outline>0</outline>
+            </PolyStyle>
+        </Style>
+        <Style id="396">
+            <PolyStyle id="397">
+                <color>fffcf6ef</color>
                 <colorMode>normal</colorMode>
                 <fill>1</fill>
                 <outline>0</outline>
@@ -1149,6 +1165,26 @@
                 <outerBoundaryIs>
                     <LinearRing id="382">
                         <coordinates>14.783919597989946,55.29535397951526,0.0 14.783919597989946,55.29616066093312,0.0 14.784892139107932,55.29535397951526,0.0 14.783919597989946,55.29535397951526,0.0</coordinates>
+                    </LinearRing>
+                </outerBoundaryIs>
+            </Polygon>
+        </Placemark>
+        <Placemark id="387">
+            <styleUrl>#390</styleUrl>
+            <Polygon id="386">
+                <outerBoundaryIs>
+                    <LinearRing id="388">
+                        <coordinates>12.14572864321608,55.34782010834188,0.0 12.14572864321608,55.36529338987772,0.0 12.183417085427134,55.36529338987772,0.0 12.183417085427134,55.34782010834188,0.0 12.14572864321608,55.34782010834188,0.0</coordinates>
+                    </LinearRing>
+                </outerBoundaryIs>
+            </Polygon>
+        </Placemark>
+        <Placemark id="393">
+            <styleUrl>#396</styleUrl>
+            <Polygon id="392">
+                <outerBoundaryIs>
+                    <LinearRing id="394">
+                        <coordinates>12.183417085427134,55.34782010834188,0.0 12.183417085427134,55.36529338987772,0.0 12.221105527638189,55.36529338987772,0.0 12.221105527638189,55.34782010834188,0.0 12.183417085427134,55.34782010834188,0.0</coordinates>
                     </LinearRing>
                 </outerBoundaryIs>
             </Polygon>
