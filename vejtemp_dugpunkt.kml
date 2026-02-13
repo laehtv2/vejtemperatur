@@ -1,56 +1,74 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2">
-    <Document id="8463">
-        <Style id="8468">
-            <PolyStyle id="8469">
+    <Document id="9747">
+        <Style id="9752">
+            <PolyStyle id="9753">
                 <color>fffffbf7</color>
                 <colorMode>normal</colorMode>
                 <fill>1</fill>
                 <outline>0</outline>
             </PolyStyle>
         </Style>
-        <Style id="8474">
-            <PolyStyle id="8475">
+        <Style id="9758">
+            <PolyStyle id="9759">
                 <color>fff9f0e7</color>
                 <colorMode>normal</colorMode>
                 <fill>1</fill>
                 <outline>0</outline>
             </PolyStyle>
         </Style>
-        <Style id="8480">
-            <PolyStyle id="8481">
+        <Style id="9764">
+            <PolyStyle id="9765">
                 <color>fff8ede2</color>
                 <colorMode>normal</colorMode>
                 <fill>1</fill>
                 <outline>0</outline>
             </PolyStyle>
         </Style>
-        <Placemark id="8465">
-            <styleUrl>#8468</styleUrl>
-            <Polygon id="8464">
+        <Style id="9770">
+            <PolyStyle id="9771">
+                <color>ffdfc697</color>
+                <colorMode>normal</colorMode>
+                <fill>1</fill>
+                <outline>0</outline>
+            </PolyStyle>
+        </Style>
+        <Placemark id="9749">
+            <styleUrl>#9752</styleUrl>
+            <Polygon id="9748">
                 <outerBoundaryIs>
-                    <LinearRing id="8466">
+                    <LinearRing id="9750">
                         <coordinates>14.972361809045221,55.03198042959245,0.0 14.972361809045221,55.049592812566935,0.0 15.010050251256278,55.049592812566935,0.0 15.010050251256278,55.03198042959245,0.0 14.972361809045221,55.03198042959245,0.0</coordinates>
                     </LinearRing>
                 </outerBoundaryIs>
             </Polygon>
         </Placemark>
-        <Placemark id="8471">
-            <styleUrl>#8474</styleUrl>
-            <Polygon id="8470">
+        <Placemark id="9755">
+            <styleUrl>#9758</styleUrl>
+            <Polygon id="9754">
                 <outerBoundaryIs>
-                    <LinearRing id="8472">
+                    <LinearRing id="9756">
                         <coordinates>12.560301507537686,55.76505423489403,0.0 12.560301507537686,55.78234294629626,0.0 12.59716144202344,55.78234294629626,0.0 12.595876498000052,55.77423737200007,0.0 12.595383839749964,55.76505423489403,0.0 12.560301507537686,55.76505423489403,0.0</coordinates>
                     </LinearRing>
                 </outerBoundaryIs>
             </Polygon>
         </Placemark>
-        <Placemark id="8477">
-            <styleUrl>#8480</styleUrl>
-            <Polygon id="8476">
+        <Placemark id="9761">
+            <styleUrl>#9764</styleUrl>
+            <Polygon id="9760">
                 <outerBoundaryIs>
-                    <LinearRing id="8478">
+                    <LinearRing id="9762">
                         <coordinates>10.261306532663314,56.34857984030583,0.0 10.261306532663314,56.36560888540067,0.0 10.29899497487437,56.36560888540067,0.0 10.29899497487437,56.34857984030583,0.0 10.261306532663314,56.34857984030583,0.0</coordinates>
+                    </LinearRing>
+                </outerBoundaryIs>
+            </Polygon>
+        </Placemark>
+        <Placemark id="9767">
+            <styleUrl>#9770</styleUrl>
+            <Polygon id="9766">
+                <outerBoundaryIs>
+                    <LinearRing id="9768">
+                        <coordinates>9.620603015075377,57.190754139326124,0.0 9.620603015075377,57.20740531556819,0.0 9.658291457286431,57.20740531556819,0.0 9.658291457286431,57.190754139326124,0.0 9.620603015075377,57.190754139326124,0.0</coordinates>
                     </LinearRing>
                 </outerBoundaryIs>
             </Polygon>
