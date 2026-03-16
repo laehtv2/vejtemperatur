@@ -1,6 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2">
-    <Document id="21">
+    <Document id="15">
+        <Style id="20">
+            <PolyStyle id="21">
+                <color>fffffbf7</color>
+                <colorMode>normal</colorMode>
+                <fill>1</fill>
+                <outline>0</outline>
+            </PolyStyle>
+        </Style>
         <Style id="26">
             <PolyStyle id="27">
                 <color>fffffbf7</color>
@@ -27,7 +35,7 @@
         </Style>
         <Style id="44">
             <PolyStyle id="45">
-                <color>fffef9f5</color>
+                <color>fffffbf7</color>
                 <colorMode>normal</colorMode>
                 <fill>1</fill>
                 <outline>0</outline>
@@ -41,6 +49,16 @@
                 <outline>0</outline>
             </PolyStyle>
         </Style>
+        <Placemark id="17">
+            <styleUrl>#20</styleUrl>
+            <Polygon id="16">
+                <outerBoundaryIs>
+                    <LinearRing id="18">
+                        <coordinates>12.108040201005023,55.01436030211085,0.0 12.108040201005023,55.03198042959245,0.0 12.14572864321608,55.03198042959245,0.0 12.14572864321608,55.01436030211085,0.0 12.108040201005023,55.01436030211085,0.0</coordinates>
+                    </LinearRing>
+                </outerBoundaryIs>
+            </Polygon>
+        </Placemark>
         <Placemark id="23">
             <styleUrl>#26</styleUrl>
             <Polygon id="22">
