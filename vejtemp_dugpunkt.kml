@@ -3,7 +3,7 @@
     <Document id="15">
         <Style id="20">
             <PolyStyle id="21">
-                <color>fffdf7f2</color>
+                <color>fffcf6f0</color>
                 <colorMode>normal</colorMode>
                 <fill>1</fill>
                 <outline>0</outline>
@@ -11,7 +11,7 @@
         </Style>
         <Style id="26">
             <PolyStyle id="27">
-                <color>fff9f0e7</color>
+                <color>fff9f0e6</color>
                 <colorMode>normal</colorMode>
                 <fill>1</fill>
                 <outline>0</outline>
@@ -27,14 +27,6 @@
         </Style>
         <Style id="38">
             <PolyStyle id="39">
-                <color>fffffbf7</color>
-                <colorMode>normal</colorMode>
-                <fill>1</fill>
-                <outline>0</outline>
-            </PolyStyle>
-        </Style>
-        <Style id="44">
-            <PolyStyle id="45">
                 <color>fffffbf7</color>
                 <colorMode>normal</colorMode>
                 <fill>1</fill>
@@ -76,16 +68,6 @@
             <Polygon id="34">
                 <outerBoundaryIs>
                     <LinearRing id="36">
-                        <coordinates>14.74623115577889,55.260337972375574,0.0 14.74623115577889,55.27784983591849,0.0 14.783919597989946,55.27784983591849,0.0 14.783919597989946,55.260337972375574,0.0 14.74623115577889,55.260337972375574,0.0</coordinates>
-                    </LinearRing>
-                </outerBoundaryIs>
-            </Polygon>
-        </Placemark>
-        <Placemark id="41">
-            <styleUrl>#44</styleUrl>
-            <Polygon id="40">
-                <outerBoundaryIs>
-                    <LinearRing id="42">
                         <coordinates>11.73115577889447,55.609110481676325,0.0 11.73115577889447,55.6264682850196,0.0 11.768844221105526,55.6264682850196,0.0 11.768844221105526,55.609110481676325,0.0 11.73115577889447,55.609110481676325,0.0</coordinates>
                     </LinearRing>
                 </outerBoundaryIs>
