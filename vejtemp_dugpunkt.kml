@@ -1,19 +1,37 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2">
-    <Document id="9">
-        <Style id="14">
-            <PolyStyle id="15">
-                <color>fffef9f4</color>
+    <Document id="15">
+        <Style id="20">
+            <PolyStyle id="21">
+                <color>fffefaf6</color>
                 <colorMode>normal</colorMode>
                 <fill>1</fill>
                 <outline>0</outline>
             </PolyStyle>
         </Style>
-        <Placemark id="11">
-            <styleUrl>#14</styleUrl>
-            <Polygon id="10">
+        <Style id="26">
+            <PolyStyle id="27">
+                <color>fffdf8f3</color>
+                <colorMode>normal</colorMode>
+                <fill>1</fill>
+                <outline>0</outline>
+            </PolyStyle>
+        </Style>
+        <Placemark id="17">
+            <styleUrl>#20</styleUrl>
+            <Polygon id="16">
                 <outerBoundaryIs>
-                    <LinearRing id="12">
+                    <LinearRing id="18">
+                        <coordinates>12.37185929648241,55.67849559741622,0.0 12.37185929648241,55.69582267504886,0.0 12.409547738693465,55.69582267504886,0.0 12.409547738693465,55.67849559741622,0.0 12.37185929648241,55.67849559741622,0.0</coordinates>
+                    </LinearRing>
+                </outerBoundaryIs>
+            </Polygon>
+        </Placemark>
+        <Placemark id="23">
+            <styleUrl>#26</styleUrl>
+            <Polygon id="22">
+                <outerBoundaryIs>
+                    <LinearRing id="24">
                         <coordinates>12.484924623115576,55.71314207579251,0.0 12.484924623115576,55.730453801466595,0.0 12.522613065326631,55.730453801466595,0.0 12.522613065326631,55.71314207579251,0.0 12.484924623115576,55.71314207579251,0.0</coordinates>
                     </LinearRing>
                 </outerBoundaryIs>
