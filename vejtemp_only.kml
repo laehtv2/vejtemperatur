@@ -3,23 +3,7 @@
     <Document id="1">
         <Style id="6">
             <PolyStyle id="7">
-                <color>fffefaf6</color>
-                <colorMode>normal</colorMode>
-                <fill>1</fill>
-                <outline>0</outline>
-            </PolyStyle>
-        </Style>
-        <Style id="12">
-            <PolyStyle id="13">
                 <color>fffbf4ec</color>
-                <colorMode>normal</colorMode>
-                <fill>1</fill>
-                <outline>0</outline>
-            </PolyStyle>
-        </Style>
-        <Style id="18">
-            <PolyStyle id="19">
-                <color>fffaf1e8</color>
                 <colorMode>normal</colorMode>
                 <fill>1</fill>
                 <outline>0</outline>
@@ -30,26 +14,6 @@
             <Polygon id="2">
                 <outerBoundaryIs>
                     <LinearRing id="4">
-                        <coordinates>12.183417085427134,55.6264682850196,0.0 12.183417085427134,55.64381840421604,0.0 12.221105527638189,55.64381840421604,0.0 12.221105527638189,55.6264682850196,0.0 12.183417085427134,55.6264682850196,0.0</coordinates>
-                    </LinearRing>
-                </outerBoundaryIs>
-            </Polygon>
-        </Placemark>
-        <Placemark id="9">
-            <styleUrl>#12</styleUrl>
-            <Polygon id="8">
-                <outerBoundaryIs>
-                    <LinearRing id="10">
-                        <coordinates>12.560301507537686,55.83416308119215,0.0 12.560301507537686,55.851421132491794,0.0 12.565047047413909,55.851421132491794,0.0 12.565114780000043,55.851141669000064,0.0 12.573541730367028,55.83416308119215,0.0 12.560301507537686,55.83416308119215,0.0</coordinates>
-                    </LinearRing>
-                </outerBoundaryIs>
-            </Polygon>
-        </Placemark>
-        <Placemark id="15">
-            <styleUrl>#18</styleUrl>
-            <Polygon id="14">
-                <outerBoundaryIs>
-                    <LinearRing id="16">
                         <coordinates>12.560301507537686,55.86867152334919,0.0 12.522613065326631,55.86867152334919,0.0 12.522613065326631,55.88591425560163,0.0 12.551660928631286,55.88591425560163,0.0 12.55445397200009,55.88287995000007,0.0 12.560301507537686,55.870483262178944,0.0 12.560301507537686,55.86867152334919,0.0</coordinates>
                     </LinearRing>
                 </outerBoundaryIs>
