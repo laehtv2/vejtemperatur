@@ -11,7 +11,7 @@
         </Style>
         <Style id="12">
             <PolyStyle id="13">
-                <color>fffcf6f0</color>
+                <color>fffbf4ed</color>
                 <colorMode>normal</colorMode>
                 <fill>1</fill>
                 <outline>0</outline>
@@ -27,7 +27,7 @@
         </Style>
         <Style id="24">
             <PolyStyle id="25">
-                <color>fffbf4ec</color>
+                <color>fffbf3ec</color>
                 <colorMode>normal</colorMode>
                 <fill>1</fill>
                 <outline>0</outline>
@@ -51,7 +51,7 @@
         </Style>
         <Style id="42">
             <PolyStyle id="43">
-                <color>fffdf7f1</color>
+                <color>fffbf3eb</color>
                 <colorMode>normal</colorMode>
                 <fill>1</fill>
                 <outline>0</outline>
@@ -59,7 +59,7 @@
         </Style>
         <Style id="48">
             <PolyStyle id="49">
-                <color>fffaf1e8</color>
+                <color>fffdf7f1</color>
                 <colorMode>normal</colorMode>
                 <fill>1</fill>
                 <outline>0</outline>
@@ -67,6 +67,30 @@
         </Style>
         <Style id="54">
             <PolyStyle id="55">
+                <color>fffaf1e8</color>
+                <colorMode>normal</colorMode>
+                <fill>1</fill>
+                <outline>0</outline>
+            </PolyStyle>
+        </Style>
+        <Style id="60">
+            <PolyStyle id="61">
+                <color>fffffbf7</color>
+                <colorMode>normal</colorMode>
+                <fill>1</fill>
+                <outline>0</outline>
+            </PolyStyle>
+        </Style>
+        <Style id="66">
+            <PolyStyle id="67">
+                <color>fffcf5ee</color>
+                <colorMode>normal</colorMode>
+                <fill>1</fill>
+                <outline>0</outline>
+            </PolyStyle>
+        </Style>
+        <Style id="72">
+            <PolyStyle id="73">
                 <color>fff8eee4</color>
                 <colorMode>normal</colorMode>
                 <fill>1</fill>
@@ -138,7 +162,7 @@
             <Polygon id="38">
                 <outerBoundaryIs>
                     <LinearRing id="40">
-                        <coordinates>12.258793969849245,55.86867152334919,0.0 12.258793969849245,55.88591425560163,0.0 12.2964824120603,55.88591425560163,0.0 12.2964824120603,55.86867152334919,0.0 12.258793969849245,55.86867152334919,0.0</coordinates>
+                        <coordinates>12.560301507537686,55.83416308119215,0.0 12.560301507537686,55.851421132491794,0.0 12.565047047413909,55.851421132491794,0.0 12.565114780000043,55.851141669000064,0.0 12.573541730367028,55.83416308119215,0.0 12.560301507537686,55.83416308119215,0.0</coordinates>
                     </LinearRing>
                 </outerBoundaryIs>
             </Polygon>
@@ -148,7 +172,7 @@
             <Polygon id="44">
                 <outerBoundaryIs>
                     <LinearRing id="46">
-                        <coordinates>12.522613065326631,55.9375965191314,0.0 12.522613065326631,55.95480863537601,0.0 12.535752743431303,55.95480863537601,0.0 12.525563998000052,55.939886786000045,0.0 12.523024309418174,55.9375965191314,0.0 12.522613065326631,55.9375965191314,0.0</coordinates>
+                        <coordinates>12.258793969849245,55.86867152334919,0.0 12.258793969849245,55.88591425560163,0.0 12.2964824120603,55.88591425560163,0.0 12.2964824120603,55.86867152334919,0.0 12.258793969849245,55.86867152334919,0.0</coordinates>
                     </LinearRing>
                 </outerBoundaryIs>
             </Polygon>
@@ -158,6 +182,36 @@
             <Polygon id="50">
                 <outerBoundaryIs>
                     <LinearRing id="52">
+                        <coordinates>12.522613065326631,55.9375965191314,0.0 12.522613065326631,55.95480863537601,0.0 12.535752743431303,55.95480863537601,0.0 12.525563998000052,55.939886786000045,0.0 12.523024309418174,55.9375965191314,0.0 12.522613065326631,55.9375965191314,0.0</coordinates>
+                    </LinearRing>
+                </outerBoundaryIs>
+            </Polygon>
+        </Placemark>
+        <Placemark id="57">
+            <styleUrl>#60</styleUrl>
+            <Polygon id="56">
+                <outerBoundaryIs>
+                    <LinearRing id="58">
+                        <coordinates>10.148241206030148,56.382630326007465,0.0 10.148241206030148,56.39964416402053,0.0 10.185929648241205,56.39964416402053,0.0 10.185929648241205,56.382630326007465,0.0 10.148241206030148,56.382630326007465,0.0</coordinates>
+                    </LinearRing>
+                </outerBoundaryIs>
+            </Polygon>
+        </Placemark>
+        <Placemark id="63">
+            <styleUrl>#66</styleUrl>
+            <Polygon id="62">
+                <outerBoundaryIs>
+                    <LinearRing id="64">
+                        <coordinates>10.185929648241205,56.382630326007465,0.0 10.185929648241205,56.39964416402053,0.0 10.223618090452259,56.39964416402053,0.0 10.223618090452259,56.382630326007465,0.0 10.185929648241205,56.382630326007465,0.0</coordinates>
+                    </LinearRing>
+                </outerBoundaryIs>
+            </Polygon>
+        </Placemark>
+        <Placemark id="69">
+            <styleUrl>#72</styleUrl>
+            <Polygon id="68">
+                <outerBoundaryIs>
+                    <LinearRing id="70">
                         <coordinates>10.072864321608039,56.670833172277675,0.0 10.035175879396983,56.670833172277675,0.0 10.035175879396983,56.6728749034499,0.0 10.049571160000083,56.67499420800004,0.0 10.052907748000052,56.67715078300006,0.0 10.053477410000083,56.68183014500005,0.0 10.055430535000085,56.68650950700003,0.0 10.059580599645258,56.68771805778455,0.0 10.069374259324695,56.68771805778455,0.0 10.070974155000044,56.687486070000034,0.0 10.072864321608039,56.68676001184859,0.0 10.072864321608039,56.670833172277675,0.0</coordinates>
                     </LinearRing>
                 </outerBoundaryIs>
